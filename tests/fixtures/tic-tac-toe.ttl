@@ -1,0 +1,186 @@
+@prefix ik: <https://ikigai-rs.dev/ns#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:ikigai:chain:root> a ik:Chain ;
+    ik:severed false ;
+    ik:layers <urn:ikigai:chain:root:layer:1> .
+<urn:ikigai:chain:root:layer:1> rdf:first <urn:ikigai:space:_:1> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:1> a ik:Alias ;
+    ik:maxHops 8 ;
+    ik:rewrites <urn:ikigai:space:_:1:rule:1> ;
+    ik:rewrites <urn:ikigai:space:_:1:rule:2> ;
+    ik:rewrites <urn:ikigai:space:_:1:rule:3> ;
+    ik:rewrites <urn:ikigai:space:_:1:rule:4> ;
+    ik:rewrites <urn:ikigai:space:_:1:rule:5> ;
+    ik:rewrites <urn:ikigai:space:_:1:rule:6> ;
+    ik:rewrites <urn:ikigai:space:_:1:rule:7> ;
+    ik:rewrites <urn:ikigai:space:_:1:rule:8> ;
+    ik:space <urn:ikigai:space:_:2> .
+
+<urn:ikigai:space:_:1:rule:1> a ik:RewriteRule ;
+    ik:ruleKind "exact" ;
+    ik:logical "urn:ttt:diagonal:0" ;
+    ik:canonical "urn:ttt:cells:0.0,1.1,2.2" .
+
+<urn:ikigai:space:_:1:rule:2> a ik:RewriteRule ;
+    ik:ruleKind "exact" ;
+    ik:logical "urn:ttt:diagonal:1" ;
+    ik:canonical "urn:ttt:cells:2.0,1.1,0.2" .
+
+<urn:ikigai:space:_:1:rule:3> a ik:RewriteRule ;
+    ik:ruleKind "exact" ;
+    ik:logical "urn:ttt:column:0" ;
+    ik:canonical "urn:ttt:cells:0.0,0.1,0.2" .
+
+<urn:ikigai:space:_:1:rule:4> a ik:RewriteRule ;
+    ik:ruleKind "exact" ;
+    ik:logical "urn:ttt:column:1" ;
+    ik:canonical "urn:ttt:cells:1.0,1.1,1.2" .
+
+<urn:ikigai:space:_:1:rule:5> a ik:RewriteRule ;
+    ik:ruleKind "exact" ;
+    ik:logical "urn:ttt:column:2" ;
+    ik:canonical "urn:ttt:cells:2.0,2.1,2.2" .
+
+<urn:ikigai:space:_:1:rule:6> a ik:RewriteRule ;
+    ik:ruleKind "exact" ;
+    ik:logical "urn:ttt:row:0" ;
+    ik:canonical "urn:ttt:cells:0.0,1.0,2.0" .
+
+<urn:ikigai:space:_:1:rule:7> a ik:RewriteRule ;
+    ik:ruleKind "exact" ;
+    ik:logical "urn:ttt:row:1" ;
+    ik:canonical "urn:ttt:cells:0.1,1.1,2.1" .
+
+<urn:ikigai:space:_:1:rule:8> a ik:RewriteRule ;
+    ik:ruleKind "exact" ;
+    ik:logical "urn:ttt:row:2" ;
+    ik:canonical "urn:ttt:cells:0.2,1.2,2.2" .
+
+<urn:ikigai:space:_:2> a ik:Fallback ;
+    ik:layers <urn:ikigai:space:_:2:layer:1> .
+<urn:ikigai:space:_:2:layer:1> rdf:first <urn:ikigai:space:_:3> ;
+    rdf:rest <urn:ikigai:space:_:2:layer:2> .
+<urn:ikigai:space:_:2:layer:2> rdf:first <urn:ikigai:space:_:4> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:3> a ik:EndpointSpace ;
+    ik:pattern "urn:ttt:cell:{x}:{y}" ;
+    ik:pattern "urn:ttt:cells:{list}" ;
+    ik:pattern "urn:ttt:board" ;
+    ik:pattern "urn:ttt:checkset:{list}" ;
+    ik:pattern "urn:ttt:winner" ;
+    ik:pattern "urn:ttt:turn" ;
+    ik:pattern "urn:ttt:move:{x}:{y}" ;
+    ik:pattern "urn:ttt:reset" ;
+    ik:pattern "urn:ttt:template:{name}" ;
+    ik:pattern "urn:ttt:view:board" ;
+    ik:pattern "urn:ttt:view:square:{x}:{y}" ;
+    ik:pattern "urn:ttt:view:status" ;
+    ik:pattern "urn:ttt:view:game" ;
+    ik:doors <urn:ikigai:space:_:3:doors:1> .
+<urn:ikigai:space:_:3:doors:1> rdf:first <urn:ikigai:space:_:3:door:1> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:2> .
+<urn:ikigai:space:_:3:doors:2> rdf:first <urn:ikigai:space:_:3:door:2> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:3> .
+<urn:ikigai:space:_:3:doors:3> rdf:first <urn:ikigai:space:_:3:door:3> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:4> .
+<urn:ikigai:space:_:3:doors:4> rdf:first <urn:ikigai:space:_:3:door:4> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:5> .
+<urn:ikigai:space:_:3:doors:5> rdf:first <urn:ikigai:space:_:3:door:5> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:6> .
+<urn:ikigai:space:_:3:doors:6> rdf:first <urn:ikigai:space:_:3:door:6> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:7> .
+<urn:ikigai:space:_:3:doors:7> rdf:first <urn:ikigai:space:_:3:door:7> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:8> .
+<urn:ikigai:space:_:3:doors:8> rdf:first <urn:ikigai:space:_:3:door:8> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:9> .
+<urn:ikigai:space:_:3:doors:9> rdf:first <urn:ikigai:space:_:3:door:9> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:10> .
+<urn:ikigai:space:_:3:doors:10> rdf:first <urn:ikigai:space:_:3:door:10> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:11> .
+<urn:ikigai:space:_:3:doors:11> rdf:first <urn:ikigai:space:_:3:door:11> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:12> .
+<urn:ikigai:space:_:3:doors:12> rdf:first <urn:ikigai:space:_:3:door:12> ;
+    rdf:rest <urn:ikigai:space:_:3:doors:13> .
+<urn:ikigai:space:_:3:doors:13> rdf:first <urn:ikigai:space:_:3:door:13> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:3:door:1> a ik:Door ;
+    ik:pattern "urn:ttt:cell:{x}:{y}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-cell" .
+
+<urn:ikigai:space:_:3:door:2> a ik:Door ;
+    ik:pattern "urn:ttt:cells:{list}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-cells" .
+
+<urn:ikigai:space:_:3:door:3> a ik:Door ;
+    ik:pattern "urn:ttt:board" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-board" .
+
+<urn:ikigai:space:_:3:door:4> a ik:Door ;
+    ik:pattern "urn:ttt:checkset:{list}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-checkset" .
+
+<urn:ikigai:space:_:3:door:5> a ik:Door ;
+    ik:pattern "urn:ttt:winner" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-winner" .
+
+<urn:ikigai:space:_:3:door:6> a ik:Door ;
+    ik:pattern "urn:ttt:turn" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-turn" .
+
+<urn:ikigai:space:_:3:door:7> a ik:Door ;
+    ik:pattern "urn:ttt:move:{x}:{y}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-move" .
+
+<urn:ikigai:space:_:3:door:8> a ik:Door ;
+    ik:pattern "urn:ttt:reset" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-reset" .
+
+<urn:ikigai:space:_:3:door:9> a ik:Door ;
+    ik:pattern "urn:ttt:template:{name}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-template" .
+
+<urn:ikigai:space:_:3:door:10> a ik:Door ;
+    ik:pattern "urn:ttt:view:board" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-view" .
+
+<urn:ikigai:space:_:3:door:11> a ik:Door ;
+    ik:pattern "urn:ttt:view:square:{x}:{y}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-view-square" .
+
+<urn:ikigai:space:_:3:door:12> a ik:Door ;
+    ik:pattern "urn:ttt:view:status" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-view-status" .
+
+<urn:ikigai:space:_:3:door:13> a ik:Door ;
+    ik:pattern "urn:ttt:view:game" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-view-game" .
+
+<urn:ikigai:space:_:4> a ik:EndpointSpace ;
+    ik:pattern "urn:ttt:stored:{x}:{y}" ;
+    ik:doors <urn:ikigai:space:_:4:doors:1> .
+<urn:ikigai:space:_:4:doors:1> rdf:first <urn:ikigai:space:_:4:door:1> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:4:door:1> a ik:Door ;
+    ik:pattern "urn:ttt:stored:{x}:{y}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "ttt-stored" .

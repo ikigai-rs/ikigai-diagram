@@ -19,3 +19,22 @@ categories = ["visualization", "wasm"]
 # `declare`. ⚠ Under 0.x caret rules this is also a CEILING (<0.2.0), which is the
 # line every module shares.
 ikigai-core = { version = "0.1.83", features = ["declare"] }
+
+[dev-dependencies]
+futures = "0.3"
+# The module recipe as one test (`tests/conformance.rs`). 0.4.0 is the current
+# definition of "done"; the brief said 0.3, which 0.4.0 superseded before this
+# crate existed, and a 0.3 pin would be a ceiling below it (^0.3 = <0.4).
+ikigai-conformance = "0.4.0"
+# The contrast floor this ecosystem enforces (`tests/contrast.rs`): `ratio` and the
+# thresholds, from the crate that owns them, rather than a second copy of the WCAG
+# math. A dev-dependency only — the palette is constant, so checking it is a test,
+# and the library itself pays nothing for it.
+ikigai-a11y = "0.2.1"
+# ★ The REPL engine, for `tests/pipeline.rs`: whether `source urn:diagram:arrangement
+# urn:kernel:topology` lands the value in `of` is decided by the engine's routing
+# rule, which no kernel-level test can see.
+ikigai-engine = "0.1.32"
+# The engine reads each contract as `Meta as=application/json`; the test kernel must
+# answer it, or the engine fails open and the pipeline tests prove nothing.
+serde_json = "1"

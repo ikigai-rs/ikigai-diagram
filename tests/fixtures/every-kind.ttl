@@ -1,0 +1,174 @@
+@prefix ik: <https://ikigai-rs.dev/ns#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:ikigai:chain:root> a ik:Chain ;
+    ik:severed false ;
+    ik:layers <urn:ikigai:chain:root:layer:1> .
+<urn:ikigai:chain:root:layer:1> rdf:first <urn:example:corridor:game:42> ;
+    rdf:rest <urn:ikigai:chain:root:layer:2> .
+<urn:ikigai:chain:root:layer:2> rdf:first <urn:example:space:host> ;
+    rdf:rest rdf:nil .
+
+<urn:example:corridor:game:42> a ik:EndpointSpace ;
+    ik:pattern "urn:example:game:state" ;
+    ik:doors <urn:example:corridor:game:42:doors:1> .
+<urn:example:corridor:game:42:doors:1> rdf:first <urn:example:corridor:game:42:door:1> ;
+    rdf:rest rdf:nil .
+
+<urn:example:corridor:game:42:door:1> a ik:Door ;
+    ik:pattern "urn:example:game:state" ;
+    ik:matchKind "exact" ;
+    ik:endpointName "game-state" .
+
+<urn:example:space:host> a ik:Fallback ;
+    ik:layers <urn:example:space:host:layer:1> .
+<urn:example:space:host:layer:1> rdf:first <urn:example:space:mod> ;
+    rdf:rest <urn:example:space:host:layer:2> .
+<urn:example:space:host:layer:2> rdf:first <urn:ikigai:space:_:2> ;
+    rdf:rest <urn:example:space:host:layer:3> .
+<urn:example:space:host:layer:3> rdf:first <urn:ikigai:space:_:4> ;
+    rdf:rest <urn:example:space:host:layer:4> .
+<urn:example:space:host:layer:4> rdf:first <urn:example:level:tenant> ;
+    rdf:rest <urn:example:space:host:layer:5> .
+<urn:example:space:host:layer:5> rdf:first <urn:ikigai:space:_:6> ;
+    rdf:rest <urn:example:space:host:layer:6> .
+<urn:example:space:host:layer:6> rdf:first <urn:ikigai:space:_:7> ;
+    rdf:rest <urn:example:space:host:layer:7> .
+<urn:example:space:host:layer:7> rdf:first <urn:example:space:mod> ;
+    rdf:rest <urn:example:space:host:layer:8> .
+<urn:example:space:host:layer:8> rdf:first <urn:ikigai:space:_:9> ;
+    rdf:rest <urn:example:space:host:layer:9> .
+<urn:example:space:host:layer:9> rdf:first <urn:ikigai:space:_:10> ;
+    rdf:rest rdf:nil .
+
+<urn:example:space:mod> a ik:Mount ;
+    ik:prefix "urn:example:mod:" ;
+    ik:space <urn:ikigai:space:_:1> .
+
+<urn:ikigai:space:_:1> a ik:EndpointSpace ;
+    ik:pattern "urn:example:mod:hello" ;
+    ik:pattern "urn:example:mod:item:{id}" ;
+    ik:pattern "urn:example:mod:v<n>" ;
+    ik:pattern "urn:example:mod:run" ;
+    ik:pattern "urn:example:mod:a-pattern-long-enough-to-be-cut:{first}:{second}:{third}:{fourth}" ;
+    ik:doors <urn:ikigai:space:_:1:doors:1> .
+<urn:ikigai:space:_:1:doors:1> rdf:first <urn:ikigai:space:_:1:door:1> ;
+    rdf:rest <urn:ikigai:space:_:1:doors:2> .
+<urn:ikigai:space:_:1:doors:2> rdf:first <urn:ikigai:space:_:1:door:2> ;
+    rdf:rest <urn:ikigai:space:_:1:doors:3> .
+<urn:ikigai:space:_:1:doors:3> rdf:first <urn:ikigai:space:_:1:door:3> ;
+    rdf:rest <urn:ikigai:space:_:1:doors:4> .
+<urn:ikigai:space:_:1:doors:4> rdf:first <urn:ikigai:space:_:1:door:4> ;
+    rdf:rest <urn:ikigai:space:_:1:doors:5> .
+<urn:ikigai:space:_:1:doors:5> rdf:first <urn:ikigai:space:_:1:door:5> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:1:door:1> a ik:Door ;
+    ik:pattern "urn:example:mod:hello" ;
+    ik:matchKind "exact" ;
+    ik:endpointName "hello" .
+
+<urn:ikigai:space:_:1:door:2> a ik:Door ;
+    ik:pattern "urn:example:mod:item:{id}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "item" .
+
+<urn:ikigai:space:_:1:door:3> a ik:Door ;
+    ik:pattern "urn:example:mod:v<n>" ;
+    ik:matchKind "custom" ;
+    ik:endpointName "versioned" .
+
+<urn:ikigai:space:_:1:door:4> a ik:Door ;
+    ik:pattern "urn:example:mod:run" ;
+    ik:matchKind "exact" ;
+    ik:endpointName "run" ;
+    ik:confinedTo <urn:example:corridor:sandbox> .
+
+<urn:ikigai:space:_:1:door:5> a ik:Door ;
+    ik:pattern "urn:example:mod:a-pattern-long-enough-to-be-cut:{first}:{second}:{third}:{fourth}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "an-endpoint-whose-name-is-long-enough-to-be-cut-as-well" .
+
+<urn:example:corridor:sandbox> a ik:EndpointSpace ;
+    ik:pattern "urn:example:sandbox:read" ;
+    ik:doors <urn:example:corridor:sandbox:doors:1> .
+<urn:example:corridor:sandbox:doors:1> rdf:first <urn:example:corridor:sandbox:door:1> ;
+    rdf:rest rdf:nil .
+
+<urn:example:corridor:sandbox:door:1> a ik:Door ;
+    ik:pattern "urn:example:sandbox:read" ;
+    ik:matchKind "exact" ;
+    ik:endpointName "sandbox-read" .
+
+<urn:ikigai:space:_:2> a ik:Alias ;
+    ik:maxHops 8 ;
+    ik:rewrites <urn:ikigai:space:_:2:rule:1> ;
+    ik:rewrites <urn:ikigai:space:_:2:rule:2> ;
+    ik:space <urn:ikigai:space:_:3> .
+
+<urn:ikigai:space:_:2:rule:1> a ik:RewriteRule ;
+    ik:ruleKind "exact" ;
+    ik:logical "urn:example:home" ;
+    ik:canonical "urn:example:mod:hello" .
+
+<urn:ikigai:space:_:2:rule:2> a ik:RewriteRule ;
+    ik:ruleKind "prefix" ;
+    ik:logical "urn:ex:" ;
+    ik:canonical "urn:example:" .
+
+<urn:ikigai:space:_:3> a ik:EndpointSpace ;
+    ik:pattern "urn:example:greeting" ;
+    ik:doors <urn:ikigai:space:_:3:doors:1> .
+<urn:ikigai:space:_:3:doors:1> rdf:first <urn:ikigai:space:_:3:door:1> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:3:door:1> a ik:Door ;
+    ik:pattern "urn:example:greeting" ;
+    ik:matchKind "exact" ;
+    ik:endpointName "greeting" .
+
+<urn:ikigai:space:_:4> a ik:Limit ;
+    ik:family "urn:personal:" ;
+    ik:matchKind "prefix" .
+
+<urn:example:level:tenant> a ik:Level ;
+    ik:seals "urn:tenant:" ;
+    ik:seals "urn:audit:" ;
+    ik:namespace "urn:iki:tenant:" ;
+    ik:space <urn:ikigai:space:_:5> .
+
+<urn:ikigai:space:_:5> a ik:EndpointSpace ;
+    ik:pattern "urn:tenant:{key}" ;
+    ik:doors <urn:ikigai:space:_:5:doors:1> .
+<urn:ikigai:space:_:5:doors:1> rdf:first <urn:ikigai:space:_:5:door:1> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:5:door:1> a ik:Door ;
+    ik:pattern "urn:tenant:{key}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "tenant-store" .
+
+<urn:ikigai:space:_:6> a ik:Rewrite ;
+    ik:space <urn:example:peer:remote> .
+
+<urn:example:peer:remote> a ik:OpaqueSpace .
+
+<urn:ikigai:space:_:7> a ik:Confine ;
+    ik:space <urn:ikigai:space:_:8> .
+
+<urn:ikigai:space:_:8> a ik:EndpointSpace ;
+    ik:pattern "urn:example:jail:{path}" ;
+    ik:doors <urn:ikigai:space:_:8:doors:1> .
+<urn:ikigai:space:_:8:doors:1> rdf:first <urn:ikigai:space:_:8:door:1> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:8:door:1> a ik:Door ;
+    ik:pattern "urn:example:jail:{path}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "jailed-file" .
+
+<urn:ikigai:space:_:9> a ik:OpaqueSpace .
+
+<urn:ikigai:space:_:10> a ik:EndpointSpace ;
+    ik:doors rdf:nil .
