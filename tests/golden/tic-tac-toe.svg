@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="704" viewBox="0 0 960 704" role="img" aria-labelledby="ikd-7cc1c63b21b82639-title ikd-7cc1c63b21b82639-desc" class="ikd">
+<title id="ikd-7cc1c63b21b82639-title">Resolution arrangement: urn:ikigai:chain:root</title>
+<desc id="ikd-7cc1c63b21b82639-desc">The resolution chain one request sees: the root alone. In all: 1 fallback, 1 alias; and 14 doors across 2 endpoint spaces, with 8 alias rules.</desc>
+<style>.ikd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:13px}.ikd-b{font-weight:700}.ikd-hole{stroke-dasharray:6 4}.ikd-dim{stroke-dasharray:2 3}.ikd-bg{fill:#ffffff}.ikd-box{fill:#ffffff}.ikd-x{fill:#1f2328}.ikd-m{fill:#59636e}.ikd-k-chain{stroke:#59636e}.ikd-t-chain{fill:#f6f8fa}.ikd-k-fallback{stroke:#0969da}.ikd-t-fallback{fill:#ddf4ff}.ikd-k-mount{stroke:#1a7f37}.ikd-t-mount{fill:#dafbe1}.ikd-k-alias{stroke:#8250df}.ikd-t-alias{fill:#fbefff}.ikd-k-limit{stroke:#cf222e}.ikd-t-limit{fill:#ffebe9}.ikd-k-level{stroke:#9a6700}.ikd-t-level{fill:#fff8c5}.ikd-k-endpoints{stroke:#1b7c83}.ikd-t-endpoints{fill:#dff7f5}.ikd-k-opaque{stroke:#818b98}.ikd-t-opaque{fill:#f6f8fa}.ikd-k-rewrite{stroke:#bc4c00}.ikd-t-rewrite{fill:#fff1e5}.ikd-k-confine{stroke:#953800}.ikd-t-confine{fill:#fff1e5}.ikd-k-unknown{stroke:#59636e}.ikd-t-unknown{fill:#f6f8fa}.ikd-k-problem{stroke:#cf222e}.ikd-t-problem{fill:#ffebe9}.ikd-mk-exact{fill:#59636e}.ikd-mk-template{fill:#0969da}.ikd-mk-prefix{fill:#1a7f37}.ikd-mk-custom{fill:#cf222e}@media (prefers-color-scheme:dark){.ikd-bg{fill:#0d1117}.ikd-box{fill:#0d1117}.ikd-x{fill:#e6edf3}.ikd-m{fill:#9198a1}.ikd-k-chain{stroke:#9198a1}.ikd-t-chain{fill:#161b22}.ikd-k-fallback{stroke:#4493f8}.ikd-t-fallback{fill:#0c1f3a}.ikd-k-mount{stroke:#3fb950}.ikd-t-mount{fill:#0d2416}.ikd-k-alias{stroke:#ab7df8}.ikd-t-alias{fill:#1d1533}.ikd-k-limit{stroke:#f85149}.ikd-t-limit{fill:#2a1214}.ikd-k-level{stroke:#d29922}.ikd-t-level{fill:#261e0c}.ikd-k-endpoints{stroke:#39c5cf}.ikd-t-endpoints{fill:#0b2326}.ikd-k-opaque{stroke:#768390}.ikd-t-opaque{fill:#161b22}.ikd-k-rewrite{stroke:#db6d28}.ikd-t-rewrite{fill:#28190d}.ikd-k-confine{stroke:#f0883e}.ikd-t-confine{fill:#28190d}.ikd-k-unknown{stroke:#9198a1}.ikd-t-unknown{fill:#161b22}.ikd-k-problem{stroke:#f85149}.ikd-t-problem{fill:#2a1214}.ikd-mk-exact{fill:#9198a1}.ikd-mk-template{fill:#4493f8}.ikd-mk-prefix{fill:#3fb950}.ikd-mk-custom{fill:#f85149}}</style>
+<rect class="ikd-bg" width="960" height="704"/>
+<g>
+<rect class="ikd-box" x="16" y="16" width="928" height="672" rx="4"/>
+<rect class="ikd-t-chain" x="17" y="17" width="926" height="46" rx="3"/>
+<text x="24" y="34"><tspan class="ikd-x ikd-b">Chain</tspan><tspan class="ikd-x">  the caller&apos;s view: corridors innermost first, then the root</tspan></text>
+<text x="24" y="54"><tspan class="ikd-m">urn:ikigai:chain:root</tspan></text>
+<g>
+<rect class="ikd-box" x="32" y="72" width="904" height="608" rx="4"/>
+<rect class="ikd-t-alias" x="33" y="73" width="902" height="26" rx="3"/>
+<text x="40" y="90"><tspan class="ikd-m">root · </tspan><tspan class="ikd-x ikd-b">Alias</tspan><tspan class="ikd-x">  8 rules tried in order; at most 8 hops</tspan></text>
+<g><title>rule 1 (exact): urn:ttt:diagonal:0 rewrites to urn:ttt:cells:0.0,1.1,2.2</title>
+<text x="40" y="118"><tspan class="ikd-m">1</tspan></text>
+<text x="56" y="118"><tspan class="ikd-mk-exact">exact</tspan></text>
+<text x="112" y="118"><tspan class="ikd-x">urn:ttt:diagonal:0</tspan></text>
+<text x="264" y="118"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="118"><tspan class="ikd-x">urn:ttt:cells:0.0,1.1,2.2</tspan></text>
+</g>
+<g><title>rule 2 (exact): urn:ttt:diagonal:1 rewrites to urn:ttt:cells:2.0,1.1,0.2</title>
+<text x="40" y="138"><tspan class="ikd-m">2</tspan></text>
+<text x="56" y="138"><tspan class="ikd-mk-exact">exact</tspan></text>
+<text x="112" y="138"><tspan class="ikd-x">urn:ttt:diagonal:1</tspan></text>
+<text x="264" y="138"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="138"><tspan class="ikd-x">urn:ttt:cells:2.0,1.1,0.2</tspan></text>
+</g>
+<g><title>rule 3 (exact): urn:ttt:column:0 rewrites to urn:ttt:cells:0.0,0.1,0.2</title>
+<text x="40" y="158"><tspan class="ikd-m">3</tspan></text>
+<text x="56" y="158"><tspan class="ikd-mk-exact">exact</tspan></text>
+<text x="112" y="158"><tspan class="ikd-x">urn:ttt:column:0</tspan></text>
+<text x="264" y="158"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="158"><tspan class="ikd-x">urn:ttt:cells:0.0,0.1,0.2</tspan></text>
+</g>
+<g><title>rule 4 (exact): urn:ttt:column:1 rewrites to urn:ttt:cells:1.0,1.1,1.2</title>
+<text x="40" y="178"><tspan class="ikd-m">4</tspan></text>
+<text x="56" y="178"><tspan class="ikd-mk-exact">exact</tspan></text>
+<text x="112" y="178"><tspan class="ikd-x">urn:ttt:column:1</tspan></text>
+<text x="264" y="178"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="178"><tspan class="ikd-x">urn:ttt:cells:1.0,1.1,1.2</tspan></text>
+</g>
+<g><title>rule 5 (exact): urn:ttt:column:2 rewrites to urn:ttt:cells:2.0,2.1,2.2</title>
+<text x="40" y="198"><tspan class="ikd-m">5</tspan></text>
+<text x="56" y="198"><tspan class="ikd-mk-exact">exact</tspan></text>
+<text x="112" y="198"><tspan class="ikd-x">urn:ttt:column:2</tspan></text>
+<text x="264" y="198"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="198"><tspan class="ikd-x">urn:ttt:cells:2.0,2.1,2.2</tspan></text>
+</g>
+<g><title>rule 6 (exact): urn:ttt:row:0 rewrites to urn:ttt:cells:0.0,1.0,2.0</title>
+<text x="40" y="218"><tspan class="ikd-m">6</tspan></text>
+<text x="56" y="218"><tspan class="ikd-mk-exact">exact</tspan></text>
+<text x="112" y="218"><tspan class="ikd-x">urn:ttt:row:0</tspan></text>
+<text x="264" y="218"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="218"><tspan class="ikd-x">urn:ttt:cells:0.0,1.0,2.0</tspan></text>
+</g>
+<g><title>rule 7 (exact): urn:ttt:row:1 rewrites to urn:ttt:cells:0.1,1.1,2.1</title>
+<text x="40" y="238"><tspan class="ikd-m">7</tspan></text>
+<text x="56" y="238"><tspan class="ikd-mk-exact">exact</tspan></text>
+<text x="112" y="238"><tspan class="ikd-x">urn:ttt:row:1</tspan></text>
+<text x="264" y="238"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="238"><tspan class="ikd-x">urn:ttt:cells:0.1,1.1,2.1</tspan></text>
+</g>
+<g><title>rule 8 (exact): urn:ttt:row:2 rewrites to urn:ttt:cells:0.2,1.2,2.2</title>
+<text x="40" y="258"><tspan class="ikd-m">8</tspan></text>
+<text x="56" y="258"><tspan class="ikd-mk-exact">exact</tspan></text>
+<text x="112" y="258"><tspan class="ikd-x">urn:ttt:row:2</tspan></text>
+<text x="264" y="258"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="258"><tspan class="ikd-x">urn:ttt:cells:0.2,1.2,2.2</tspan></text>
+</g>
+<g>
+<rect class="ikd-box" x="48" y="268" width="880" height="404" rx="4"/>
+<rect class="ikd-t-fallback" x="49" y="269" width="878" height="26" rx="3"/>
+<text x="56" y="286"><tspan class="ikd-x ikd-b">Fallback</tspan><tspan class="ikd-x">  2 layers consulted in order; the first hit wins</tspan></text>
+<g>
+<rect class="ikd-box" x="64" y="304" width="856" height="296" rx="4"/>
+<rect class="ikd-t-endpoints" x="65" y="305" width="854" height="26" rx="3"/>
+<text x="72" y="322"><tspan class="ikd-m">layer 1 · </tspan><tspan class="ikd-x ikd-b">Endpoints</tspan><tspan class="ikd-x">  13 doors tried in order; the first match wins</tspan></text>
+<g><title>door 1: urn:ttt:cell:{x}:{y} (template) is answered by ttt-cell</title>
+<text x="72" y="350"><tspan class="ikd-m">1</tspan></text>
+<text x="96" y="350"><tspan class="ikd-x">urn:ttt:cell:{x}:{y}</tspan></text>
+<text x="320" y="350"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="350"><tspan class="ikd-x ikd-b">ttt-cell</tspan></text>
+<text x="464" y="350"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 2: urn:ttt:cells:{list} (template) is answered by ttt-cells</title>
+<text x="72" y="370"><tspan class="ikd-m">2</tspan></text>
+<text x="96" y="370"><tspan class="ikd-x">urn:ttt:cells:{list}</tspan></text>
+<text x="320" y="370"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="370"><tspan class="ikd-x ikd-b">ttt-cells</tspan></text>
+<text x="464" y="370"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 3: urn:ttt:board (template) is answered by ttt-board</title>
+<text x="72" y="390"><tspan class="ikd-m">3</tspan></text>
+<text x="96" y="390"><tspan class="ikd-x">urn:ttt:board</tspan></text>
+<text x="320" y="390"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="390"><tspan class="ikd-x ikd-b">ttt-board</tspan></text>
+<text x="464" y="390"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 4: urn:ttt:checkset:{list} (template) is answered by ttt-checkset</title>
+<text x="72" y="410"><tspan class="ikd-m">4</tspan></text>
+<text x="96" y="410"><tspan class="ikd-x">urn:ttt:checkset:{list}</tspan></text>
+<text x="320" y="410"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="410"><tspan class="ikd-x ikd-b">ttt-checkset</tspan></text>
+<text x="464" y="410"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 5: urn:ttt:winner (template) is answered by ttt-winner</title>
+<text x="72" y="430"><tspan class="ikd-m">5</tspan></text>
+<text x="96" y="430"><tspan class="ikd-x">urn:ttt:winner</tspan></text>
+<text x="320" y="430"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="430"><tspan class="ikd-x ikd-b">ttt-winner</tspan></text>
+<text x="464" y="430"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 6: urn:ttt:turn (template) is answered by ttt-turn</title>
+<text x="72" y="450"><tspan class="ikd-m">6</tspan></text>
+<text x="96" y="450"><tspan class="ikd-x">urn:ttt:turn</tspan></text>
+<text x="320" y="450"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="450"><tspan class="ikd-x ikd-b">ttt-turn</tspan></text>
+<text x="464" y="450"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 7: urn:ttt:move:{x}:{y} (template) is answered by ttt-move</title>
+<text x="72" y="470"><tspan class="ikd-m">7</tspan></text>
+<text x="96" y="470"><tspan class="ikd-x">urn:ttt:move:{x}:{y}</tspan></text>
+<text x="320" y="470"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="470"><tspan class="ikd-x ikd-b">ttt-move</tspan></text>
+<text x="464" y="470"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 8: urn:ttt:reset (template) is answered by ttt-reset</title>
+<text x="72" y="490"><tspan class="ikd-m">8</tspan></text>
+<text x="96" y="490"><tspan class="ikd-x">urn:ttt:reset</tspan></text>
+<text x="320" y="490"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="490"><tspan class="ikd-x ikd-b">ttt-reset</tspan></text>
+<text x="464" y="490"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 9: urn:ttt:template:{name} (template) is answered by ttt-template</title>
+<text x="72" y="510"><tspan class="ikd-m">9</tspan></text>
+<text x="96" y="510"><tspan class="ikd-x">urn:ttt:template:{name}</tspan></text>
+<text x="320" y="510"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="510"><tspan class="ikd-x ikd-b">ttt-template</tspan></text>
+<text x="464" y="510"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 10: urn:ttt:view:board (template) is answered by ttt-view</title>
+<text x="72" y="530"><tspan class="ikd-m">10</tspan></text>
+<text x="96" y="530"><tspan class="ikd-x">urn:ttt:view:board</tspan></text>
+<text x="320" y="530"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="530"><tspan class="ikd-x ikd-b">ttt-view</tspan></text>
+<text x="464" y="530"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 11: urn:ttt:view:square:{x}:{y} (template) is answered by ttt-view-square</title>
+<text x="72" y="550"><tspan class="ikd-m">11</tspan></text>
+<text x="96" y="550"><tspan class="ikd-x">urn:ttt:view:square:{x}:{y}</tspan></text>
+<text x="320" y="550"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="550"><tspan class="ikd-x ikd-b">ttt-view-square</tspan></text>
+<text x="464" y="550"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 12: urn:ttt:view:status (template) is answered by ttt-view-status</title>
+<text x="72" y="570"><tspan class="ikd-m">12</tspan></text>
+<text x="96" y="570"><tspan class="ikd-x">urn:ttt:view:status</tspan></text>
+<text x="320" y="570"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="570"><tspan class="ikd-x ikd-b">ttt-view-status</tspan></text>
+<text x="464" y="570"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<g><title>door 13: urn:ttt:view:game (template) is answered by ttt-view-game</title>
+<text x="72" y="590"><tspan class="ikd-m">13</tspan></text>
+<text x="96" y="590"><tspan class="ikd-x">urn:ttt:view:game</tspan></text>
+<text x="320" y="590"><tspan class="ikd-m">→</tspan></text>
+<text x="336" y="590"><tspan class="ikd-x ikd-b">ttt-view-game</tspan></text>
+<text x="464" y="590"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<rect class="ikd-k-endpoints" x="64" y="304" width="856" height="296" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<g>
+<rect class="ikd-box" x="64" y="608" width="856" height="56" rx="4"/>
+<rect class="ikd-t-endpoints" x="65" y="609" width="854" height="26" rx="3"/>
+<text x="72" y="626"><tspan class="ikd-m">layer 2 · </tspan><tspan class="ikd-x ikd-b">Endpoints</tspan><tspan class="ikd-x">  1 door tried in order; the first match wins</tspan></text>
+<g><title>door 1: urn:ttt:stored:{x}:{y} (template) is answered by ttt-stored</title>
+<text x="72" y="654"><tspan class="ikd-m">1</tspan></text>
+<text x="88" y="654"><tspan class="ikd-x">urn:ttt:stored:{x}:{y}</tspan></text>
+<text x="272" y="654"><tspan class="ikd-m">→</tspan></text>
+<text x="288" y="654"><tspan class="ikd-x ikd-b">ttt-stored</tspan></text>
+<text x="376" y="654"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<rect class="ikd-k-endpoints" x="64" y="608" width="856" height="56" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<rect class="ikd-k-fallback" x="48" y="268" width="880" height="404" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<rect class="ikd-k-alias" x="32" y="72" width="904" height="608" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<rect class="ikd-k-chain" x="16" y="16" width="928" height="672" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+</svg>
