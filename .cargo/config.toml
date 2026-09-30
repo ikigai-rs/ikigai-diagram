@@ -1,0 +1,9 @@
+# `Topology::from_turtle` (ikigai-core's `declare` feature) parses with oxttl/oxrdf,
+# which pull getrandom 0.3, whose browser backend must be selected explicitly. Core
+# enables getrandom's `wasm_js` feature; a library cannot set the matching cfg, so
+# this repo sets it for its own wasm32 builds (the `wasm32 lib clippy` job) — the
+# same file ikigai-linkeddata and ikigai-markdown carry. A browser host that links
+# this crate sets the same flag in its own config: a dependency's config.toml does
+# not apply to its consumer.
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
