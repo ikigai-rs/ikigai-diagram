@@ -1,0 +1,52 @@
+@prefix ik: <https://ikigai-rs.dev/ns#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:ikigai:chain:root> a ik:Chain ;
+    ik:severed false ;
+    ik:layers <urn:ikigai:chain:root:layer:1> .
+<urn:ikigai:chain:root:layer:1> rdf:first <urn:ikigai:space:_:1> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:1> a ik:Fallback ;
+    ik:layers <urn:ikigai:space:_:1:layer:1> .
+<urn:ikigai:space:_:1:layer:1> rdf:first <urn:iki:space:diagram> ;
+    rdf:rest <urn:ikigai:space:_:1:layer:2> .
+<urn:ikigai:space:_:1:layer:2> rdf:first <urn:ikigai:space:_:2> ;
+    rdf:rest <urn:ikigai:space:_:1:layer:3> .
+<urn:ikigai:space:_:1:layer:3> rdf:first <urn:ikigai:space:_:3> ;
+    rdf:rest rdf:nil .
+
+<urn:iki:space:diagram> a ik:EndpointSpace ;
+    ik:pattern "urn:diagram:arrangement" ;
+    ik:pattern "urn:diagram:kernel" ;
+    ik:doors <urn:iki:space:diagram:doors:1> .
+<urn:iki:space:diagram:doors:1> rdf:first <urn:iki:space:diagram:door:1> ;
+    rdf:rest <urn:iki:space:diagram:doors:2> .
+<urn:iki:space:diagram:doors:2> rdf:first <urn:iki:space:diagram:door:2> ;
+    rdf:rest rdf:nil .
+
+<urn:iki:space:diagram:door:1> a ik:Door ;
+    ik:pattern "urn:diagram:arrangement" ;
+    ik:matchKind "exact" ;
+    ik:endpointName "diagram-arrangement" .
+
+<urn:iki:space:diagram:door:2> a ik:Door ;
+    ik:pattern "urn:diagram:kernel" ;
+    ik:matchKind "exact" ;
+    ik:endpointName "diagram-kernel" .
+
+<urn:ikigai:space:_:2> a ik:EndpointSpace ;
+    ik:pattern "urn:example:echo:{text}" ;
+    ik:doors <urn:ikigai:space:_:2:doors:1> .
+<urn:ikigai:space:_:2:doors:1> rdf:first <urn:ikigai:space:_:2:door:1> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:2:door:1> a ik:Door ;
+    ik:pattern "urn:example:echo:{text}" ;
+    ik:matchKind "template" ;
+    ik:endpointName "echo" .
+
+<urn:ikigai:space:_:3> a ik:Mount ;
+    ik:prefix "urn:mirror:" ;
+    ik:space <urn:iki:space:diagram> .

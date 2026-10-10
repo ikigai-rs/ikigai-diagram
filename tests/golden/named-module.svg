@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="428" viewBox="0 0 960 428" role="img" aria-labelledby="ikd-e04c90e4965f8947-title ikd-e04c90e4965f8947-desc" class="ikd">
+<title id="ikd-e04c90e4965f8947-title">Resolution arrangement: urn:ikigai:chain:root</title>
+<desc id="ikd-e04c90e4965f8947-desc">The resolution chain one request sees: the root alone. In all: 1 fallback, 1 mount; and 3 doors across 2 endpoint spaces. Named spaces, in the order drawn: urn:iki:space:diagram.</desc>
+<style>.ikd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:13px}.ikd-b{font-weight:700}.ikd-hole{stroke-dasharray:6 4}.ikd-dim{stroke-dasharray:2 3}.ikd-bg{fill:#ffffff}.ikd-box{fill:#ffffff}.ikd-x{fill:#1f2328}.ikd-m{fill:#59636e}.ikd-k-chain{stroke:#59636e}.ikd-t-chain{fill:#f6f8fa}.ikd-k-fallback{stroke:#0969da}.ikd-t-fallback{fill:#ddf4ff}.ikd-k-mount{stroke:#1a7f37}.ikd-t-mount{fill:#dafbe1}.ikd-k-alias{stroke:#8250df}.ikd-t-alias{fill:#fbefff}.ikd-k-limit{stroke:#cf222e}.ikd-t-limit{fill:#ffebe9}.ikd-k-level{stroke:#9a6700}.ikd-t-level{fill:#fff8c5}.ikd-k-endpoints{stroke:#1b7c83}.ikd-t-endpoints{fill:#dff7f5}.ikd-k-opaque{stroke:#818b98}.ikd-t-opaque{fill:#f6f8fa}.ikd-k-rewrite{stroke:#bc4c00}.ikd-t-rewrite{fill:#fff1e5}.ikd-k-confine{stroke:#953800}.ikd-t-confine{fill:#fff1e5}.ikd-k-unknown{stroke:#59636e}.ikd-t-unknown{fill:#f6f8fa}.ikd-k-problem{stroke:#cf222e}.ikd-t-problem{fill:#ffebe9}.ikd-mk-exact{fill:#59636e}.ikd-mk-template{fill:#0969da}.ikd-mk-prefix{fill:#1a7f37}.ikd-mk-custom{fill:#cf222e}@media (prefers-color-scheme:dark){.ikd-bg{fill:#0d1117}.ikd-box{fill:#0d1117}.ikd-x{fill:#e6edf3}.ikd-m{fill:#9198a1}.ikd-k-chain{stroke:#9198a1}.ikd-t-chain{fill:#161b22}.ikd-k-fallback{stroke:#4493f8}.ikd-t-fallback{fill:#0c1f3a}.ikd-k-mount{stroke:#3fb950}.ikd-t-mount{fill:#0d2416}.ikd-k-alias{stroke:#ab7df8}.ikd-t-alias{fill:#1d1533}.ikd-k-limit{stroke:#f85149}.ikd-t-limit{fill:#2a1214}.ikd-k-level{stroke:#d29922}.ikd-t-level{fill:#261e0c}.ikd-k-endpoints{stroke:#39c5cf}.ikd-t-endpoints{fill:#0b2326}.ikd-k-opaque{stroke:#768390}.ikd-t-opaque{fill:#161b22}.ikd-k-rewrite{stroke:#db6d28}.ikd-t-rewrite{fill:#28190d}.ikd-k-confine{stroke:#f0883e}.ikd-t-confine{fill:#28190d}.ikd-k-unknown{stroke:#9198a1}.ikd-t-unknown{fill:#161b22}.ikd-k-problem{stroke:#f85149}.ikd-t-problem{fill:#2a1214}.ikd-mk-exact{fill:#9198a1}.ikd-mk-template{fill:#4493f8}.ikd-mk-prefix{fill:#3fb950}.ikd-mk-custom{fill:#f85149}}</style>
+<rect class="ikd-bg" width="960" height="428"/>
+<g>
+<rect class="ikd-box" x="16" y="16" width="928" height="396" rx="4"/>
+<rect class="ikd-t-chain" x="17" y="17" width="926" height="46" rx="3"/>
+<text x="24" y="34"><tspan class="ikd-x ikd-b">Chain</tspan><tspan class="ikd-x">  the caller&apos;s view: corridors innermost first, then the root</tspan></text>
+<text x="24" y="54"><tspan class="ikd-m">urn:ikigai:chain:root</tspan></text>
+<g>
+<rect class="ikd-box" x="32" y="72" width="904" height="332" rx="4"/>
+<rect class="ikd-t-fallback" x="33" y="73" width="902" height="26" rx="3"/>
+<text x="40" y="90"><tspan class="ikd-m">root · </tspan><tspan class="ikd-x ikd-b">Fallback</tspan><tspan class="ikd-x">  3 layers consulted in order; the first hit wins</tspan></text>
+<g>
+<rect class="ikd-box" x="48" y="108" width="880" height="96" rx="4"/>
+<rect class="ikd-t-endpoints" x="49" y="109" width="878" height="46" rx="3"/>
+<text x="56" y="126"><tspan class="ikd-m">layer 1 · </tspan><tspan class="ikd-x ikd-b">Endpoints</tspan><tspan class="ikd-x">  2 doors tried in order; the first match wins</tspan></text>
+<text x="56" y="146"><tspan class="ikd-m">urn:iki:space:diagram</tspan></text>
+<g><title>door 1: urn:diagram:arrangement (exact) is answered by diagram-arrangement</title>
+<text x="56" y="174"><tspan class="ikd-m">1</tspan></text>
+<text x="72" y="174"><tspan class="ikd-x">urn:diagram:arrangement</tspan></text>
+<text x="264" y="174"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="174"><tspan class="ikd-x ikd-b">diagram-arrangement</tspan></text>
+<text x="440" y="174"><tspan class="ikd-mk-exact">exact</tspan></text>
+</g>
+<g><title>door 2: urn:diagram:kernel (exact) is answered by diagram-kernel</title>
+<text x="56" y="194"><tspan class="ikd-m">2</tspan></text>
+<text x="72" y="194"><tspan class="ikd-x">urn:diagram:kernel</tspan></text>
+<text x="264" y="194"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="194"><tspan class="ikd-x ikd-b">diagram-kernel</tspan></text>
+<text x="440" y="194"><tspan class="ikd-mk-exact">exact</tspan></text>
+</g>
+<rect class="ikd-k-endpoints" x="48" y="108" width="880" height="96" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<g>
+<rect class="ikd-box" x="48" y="212" width="880" height="56" rx="4"/>
+<rect class="ikd-t-endpoints" x="49" y="213" width="878" height="26" rx="3"/>
+<text x="56" y="230"><tspan class="ikd-m">layer 2 · </tspan><tspan class="ikd-x ikd-b">Endpoints</tspan><tspan class="ikd-x">  1 door tried in order; the first match wins</tspan></text>
+<g><title>door 1: urn:example:echo:{text} (template) is answered by echo</title>
+<text x="56" y="258"><tspan class="ikd-m">1</tspan></text>
+<text x="72" y="258"><tspan class="ikd-x">urn:example:echo:{text}</tspan></text>
+<text x="264" y="258"><tspan class="ikd-m">→</tspan></text>
+<text x="280" y="258"><tspan class="ikd-x ikd-b">echo</tspan></text>
+<text x="320" y="258"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<rect class="ikd-k-endpoints" x="48" y="212" width="880" height="56" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<g>
+<rect class="ikd-box" x="48" y="276" width="880" height="120" rx="4"/>
+<rect class="ikd-t-mount" x="49" y="277" width="878" height="26" rx="3"/>
+<text x="56" y="294"><tspan class="ikd-m">layer 3 · </tspan><tspan class="ikd-x ikd-b">Mount</tspan><tspan class="ikd-x">  urn:mirror:</tspan></text>
+<g>
+<rect class="ikd-box" x="64" y="312" width="856" height="76" rx="4"/>
+<rect class="ikd-t-endpoints" x="65" y="313" width="854" height="46" rx="3"/>
+<text x="72" y="330"><tspan class="ikd-x ikd-b">Endpoints</tspan></text>
+<text x="72" y="350"><tspan class="ikd-m">urn:iki:space:diagram</tspan></text>
+<text x="72" y="378"><tspan class="ikd-m">drawn above: the same space, reached again</tspan></text>
+<rect class="ikd-k-endpoints" x="64" y="312" width="856" height="76" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<rect class="ikd-k-mount" x="48" y="276" width="880" height="120" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<rect class="ikd-k-fallback" x="32" y="72" width="904" height="332" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<rect class="ikd-k-chain" x="16" y="16" width="928" height="396" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+</svg>

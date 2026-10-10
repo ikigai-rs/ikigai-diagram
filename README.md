@@ -44,7 +44,8 @@ let tree = Topology::from_turtle(turtle)?;   // ikigai-core, feature `declare`
 let svg: String = ikigai_diagram::render(&tree);
 ```
 
-A host mounts the endpoints with `ikigai_diagram::space()`.
+A host mounts the endpoints with `ikigai_diagram::space()`, which names itself
+`urn:iki:space:diagram` (`ikigai_diagram::SPACE_ID`).
 
 ## What the picture says
 
@@ -64,7 +65,9 @@ pixels wide however large the arrangement grows:
 - an **opaque** space is a dotted box: where the graph's knowledge stops.
 
 A named space shows its IRI; an anonymous one shows no skolem. A named space
-reached twice is drawn once. Text too long for its column ends in an ellipsis and
+reached twice is drawn once, and referenced where it is met again. A module's
+configuration-free space names itself `urn:iki:space:<module>`, so the picture of
+a host says which modules it holds (`tests/golden/named-module.svg`). Text too long for its column ends in an ellipsis and
 is carried whole in a tooltip, and every door row has one.
 
 ## Properties it keeps
@@ -79,7 +82,7 @@ is carried whole in a tooltip, and every door row has one.
 - **Deterministic.** The same tree renders the same bytes: integer layout over a
   fixed monospace advance, no floats, no clock.
 - **Accessible.** The root `<svg>` is `role="img"` with a `<title>` and a `<desc>`
-  that states the arrangement in words; every label is real `<text>`; every color
+  that states the arrangement in words, the names its spaces claim included; every label is real `<text>`; every color
   is a token with a dark scheme under `prefers-color-scheme`, and every pair the
   picture draws meets the WCAG floor `ikigai-a11y` enforces (4.5:1 for text, 3:1
   for outlines), checked by `tests/contrast.rs`.

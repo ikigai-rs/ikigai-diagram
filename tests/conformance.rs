@@ -10,12 +10,17 @@
 //!   its result rightly carries that resource's threads (`urn:kernel:bindings` for
 //!   the kernel's topology, the declaration's own thread for `of`). Declaring them
 //!   pure would be the lie the suite exists to catch.
+//! - **`space()` is self-named** — it takes no parameters and reads nothing while
+//!   it is built, so every call holds the same two doors and it claims
+//!   `urn:iki:space:diagram`; the suite calls it twice and holds it to that.
 //! - **a fixture for `of`** — the suite's minimal `xsd:anyURI` names nothing the
 //!   kernel binds, so the invoking checks would see only an unresolved sub-request.
 //!   The fixture names a real arrangement served by a fixture endpoint.
 //!
 //! The fixture endpoint is walked too (the suite cannot tell it from the module's
-//! own), so it is described like one: a kebab-case id, its verbs and its face.
+//! own), so it is described like one: a kebab-case id, its verbs and its face. It
+//! answers a constant, so it is declared `pure` (since conformance 0.5, a cacheable
+//! answer with no thread but its own name must say so).
 
 mod common;
 
@@ -64,11 +69,17 @@ fn conforms() {
     let suite = Suite::new()
         .cacheable("diagram-arrangement")
         .cacheable("diagram-kernel")
-        .fixture(Fixture::new("diagram-arrangement", Verb::Source).arg("of", FIXTURE_IRI));
+        .pure(FIXTURE_ID)
+        .fixture(Fixture::new("diagram-arrangement", Verb::Source).arg("of", FIXTURE_IRI))
+        .self_named_space("diagram", ikigai_diagram::space);
 
     let report = suite.run_blocking(&kernel);
     println!("{report}"); // shown with --nocapture: what the walk probed and did not
     assert!(report.is_clean(), "{report}");
+    assert_eq!(
+        ikigai_core::space_iri("diagram").as_str(),
+        ikigai_diagram::SPACE_ID
+    );
 
     // The walk saw exactly the module's endpoints and the fixture. A third binding
     // without a declaration would be held to a weaker standard; a declared id that
