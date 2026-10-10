@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use ikigai_core::{
     Alias, AliasTable, Door, EndpointSpace, Error, Fallback, FnEndpoint, Iri, Kernel, MatchKind,
-    RuleKind, SpaceKind, Topology, TopologyRule, UriTemplate,
+    Mount, RuleKind, Space, SpaceKind, Topology, TopologyRule, UriTemplate,
 };
 
 /// A committed file under `tests/`, read at run time so a missing one is a test
@@ -158,4 +158,19 @@ pub fn tic_tac_toe_kernel() -> Kernel {
         Arc::new(Fallback::new(vec![Arc::new(composites), Arc::new(store)])),
     );
     Kernel::new(Arc::new(space))
+}
+
+/// A host arrangement holding a SELF-NAMED module space, `ikigai_diagram::space()`
+/// (`urn:iki:space:diagram`), reached twice: as the first layer of a fallback, and
+/// again under a mount. A name is a claim (same name, same doors), so the picture
+/// draws the space once, where it is first met, and refers to it after.
+pub fn named_module_kernel() -> Kernel {
+    let diagram: Arc<dyn Space> = Arc::new(ikigai_diagram::space());
+    let echo = EndpointSpace::new().bind(template("urn:example:echo:{text}"), named("echo"));
+    let host = Fallback::new(vec![
+        diagram.clone(),
+        Arc::new(echo),
+        Arc::new(Mount::new("urn:mirror:", diagram)),
+    ]);
+    Kernel::new(Arc::new(host))
 }

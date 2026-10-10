@@ -18,7 +18,7 @@
 
 mod common;
 
-use common::{committed, every_kind, tic_tac_toe_kernel};
+use common::{committed, every_kind, named_module_kernel, tic_tac_toe_kernel};
 use ikigai_core::Topology;
 
 /// Compare `actual` with the committed `tests/{relative}`, writing the actual out
@@ -69,4 +69,21 @@ fn the_tic_tac_toe_picture_is_stable() {
     let svg = ikigai_diagram::render(&tree);
     assert_eq!(svg, ikigai_diagram::render(&tree), "deterministic");
     matches("golden/tic-tac-toe.svg", &svg);
+}
+
+#[test]
+fn the_named_module_fixture_is_a_real_kernels_topology() {
+    let tree = named_module_kernel().topology();
+    matches("fixtures/named-module.ttl", &tree.to_turtle());
+    let text = committed("fixtures/named-module.ttl").expect("the fixture");
+    assert_eq!(Topology::from_turtle(&text).expect("it parses"), tree);
+}
+
+#[test]
+fn the_named_module_picture_is_stable() {
+    let text = committed("fixtures/named-module.ttl").expect("the fixture");
+    let tree = Topology::from_turtle(&text).expect("it parses");
+    let svg = ikigai_diagram::render(&tree);
+    assert_eq!(svg, ikigai_diagram::render(&tree), "deterministic");
+    matches("golden/named-module.svg", &svg);
 }

@@ -77,11 +77,13 @@
 //! - an **opaque** space is a dotted box: where the graph's knowledge stops.
 //!
 //! A named node shows its IRI; an anonymous one shows no skolem. A named space
-//! reached twice is drawn once and referenced after. Long text is cut with an
+//! reached twice is drawn once and referenced after. A module's configuration-free
+//! space names itself `urn:iki:space:<module>` (this one is [`SPACE_ID`]), so the
+//! picture of a host says which modules it holds. Long text is cut with an
 //! ellipsis and carried whole in a `<title>` tooltip; every door row has one.
 //!
 //! The root `<svg>` is `role="img"` with a `<title>` and a `<desc>` that states the
-//! arrangement in words; every label is real `<text>`; every color is a token in
+//! arrangement in words, the names its spaces claim included; every label is real `<text>`; every color is a token in
 //! [`palette`], with a dark scheme under `prefers-color-scheme`, and every pair the
 //! picture draws meets the WCAG floor `ikigai-a11y` enforces (`tests/contrast.rs`).
 //! The same tree renders byte-identical SVG.
@@ -103,8 +105,8 @@ mod render;
 pub use render::{render, WIDTH};
 
 use ikigai_core::{
-    ArgRef, ArgSpec, AsyncFnEndpoint, Description, EndpointSpace, Error, Exact, Invocation, Iri,
-    ReprType, Representation, Request, Result, Topology, Verb,
+    space_iri, ArgRef, ArgSpec, AsyncFnEndpoint, Description, EndpointSpace, Error, Exact,
+    Invocation, Iri, ReprType, Representation, Request, Result, Topology, Verb,
 };
 
 /// The picture of the arrangement `of` names.
@@ -123,11 +125,19 @@ const TURTLE: &str = "text/turtle";
 /// The XSD `anyURI` datatype IRI — the `class` of `of`.
 const XSD_ANY_URI: &str = "http://www.w3.org/2001/XMLSchema#anyURI";
 
-/// The module's endpoints: [`ARRANGEMENT`] and [`KERNEL`].
+/// The name [`space`] claims: `urn:iki:space:diagram`.
+pub const SPACE_ID: &str = "urn:iki:space:diagram";
+
+/// The module's endpoints: [`ARRANGEMENT`] and [`KERNEL`], named [`SPACE_ID`].
+///
+/// Configuration-free (no parameters, nothing read while building it), so it names
+/// itself: every call holds the same two doors. The name goes on LAST, because a
+/// later `bind` drops it (a space with other doors is a different space).
 pub fn space() -> EndpointSpace {
     EndpointSpace::new()
         .bind(Exact::new(ARRANGEMENT), arrangement())
         .bind(Exact::new(KERNEL), kernel())
+        .named(space_iri("diagram"))
 }
 
 /// `urn:diagram:arrangement of=<iri>` — source `of` and draw it.

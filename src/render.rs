@@ -45,8 +45,10 @@ const ELLIPSIS: char = '…';
 ///
 /// Deterministic: the same tree renders byte-identical SVG. Accessible: the root
 /// `<svg>` is `role="img"` with a `<title>` and a `<desc>` that states the
-/// arrangement in words, every label is real `<text>`, and every color is a token
-/// from [`palette`] (light, and dark under `prefers-color-scheme`).
+/// arrangement in words (ending with the names its spaces claim, in the order they
+/// are drawn, when any below the outermost claims one), every label is real
+/// `<text>`, and every color is a token from [`palette`] (light, and dark under
+/// `prefers-color-scheme`).
 ///
 /// ```
 /// use ikigai_core::{Door, MatchKind, SpaceKind, Topology};
@@ -59,6 +61,13 @@ const ELLIPSIS: char = '…';
 /// assert!(svg.contains("role=\"img\""));
 /// assert!(svg.contains(">urn:hello</tspan></text>")); // every label is real text
 /// assert_eq!(svg, ikigai_diagram::render(&leaf)); // the same bytes, every time
+///
+/// // A named space shows its name in its header band, and the desc states it.
+/// let named = leaf.clone().with_id(Some(ikigai_core::space_iri("hello")));
+/// let host = Topology::new(SpaceKind::Fallback).child(named);
+/// let svg = ikigai_diagram::render(&host);
+/// assert!(svg.contains("<tspan class=\"ikd-m\">urn:iki:space:hello</tspan></text>"));
+/// assert!(svg.contains("Named spaces, in the order drawn: urn:iki:space:hello.</desc>"));
 /// ```
 pub fn render(topology: &Topology) -> String {
     Layout::of(topology).svg()
@@ -680,10 +689,18 @@ struct Counts {
     confines: usize,
     unknown: usize,
     holes: Vec<String>,
+    /// Every name a node claims, in the order the nodes are first drawn (a name
+    /// reached again is drawn once, so it is listed once). The header band shows
+    /// each one; the `<desc>` states them too, so the picture's text alternative
+    /// says which spaces it shows, not only how many.
+    names: Vec<String>,
 }
 
 impl Counts {
     fn count(&mut self, t: &Topology) {
+        if let Some(id) = &t.id {
+            self.names.push(id.as_str().to_string());
+        }
         match &t.kind {
             SpaceKind::Chain { .. } => self.chains += 1,
             SpaceKind::Fallback => self.fallbacks += 1,
@@ -789,6 +806,21 @@ impl Counts {
                 out,
                 " Holes, where a name resolves as unbound: {}.",
                 self.holes.join(", ")
+            );
+        }
+        // The outermost node's name is already the `<title>`'s, so it is not repeated.
+        let root_name = root.id.as_ref().map(|i| i.as_str());
+        let names: Vec<&str> = self
+            .names
+            .iter()
+            .map(String::as_str)
+            .filter(|n| Some(*n) != root_name)
+            .collect();
+        if !names.is_empty() {
+            let _ = write!(
+                out,
+                " Named spaces, in the order drawn: {}.",
+                names.join(", ")
             );
         }
         out
