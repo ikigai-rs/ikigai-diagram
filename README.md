@@ -21,11 +21,26 @@ the renderer to byte for byte, so it cannot drift from what the code draws.
 
 ## Calling it
 
+In the REPL, `show` draws the picture: a terminal cannot render SVG, so it writes
+the file to the temporary directory, opens it, and prints where it went.
+
 ```text
-source urn:diagram:kernel                              the arrangement you are in
-source urn:diagram:arrangement urn:file:game-space.ttl   a declared space, as a file
-source urn:diagram:arrangement of=urn:kernel:topology    the same as urn:diagram:kernel
+show urn:diagram:kernel                                  the arrangement you are in
+show urn:diagram:arrangement urn:file:game-space.ttl     a declared space, as a file
+show urn:diagram:arrangement of=urn:kernel:topology      the same as urn:diagram:kernel
 ```
+
+`source` answers the SVG itself, so a REPL prints all of it (tens of kilobytes for
+a real kernel). Use it when you want the bytes, redirected to a file:
+
+```sh
+ikigai -c 'source urn:diagram:kernel' > kernel.svg
+```
+
+`show` is in ikigai-cli 0.1.43 and later. The opener is the config home's
+`show.opener`: the platform's own when unset, `none` to write the file and print
+its path without opening it (over ssh, say), or any command line, which gets the
+path appended.
 
 | name | argument | needs |
 |---|---|---|
