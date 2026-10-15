@@ -49,8 +49,8 @@ as an `<img>` with its own `alt` text), and the host's page is the host's.
   the `<desc>`; `tests/golden.rs` holds three pictures byte for byte, so any change to the markup
   shows up as a diff. All ran and passed on main at `43d3e67` on 2026-10-15 (31 tests and one
   doctest; one test that only prints a picture is ignored). CI runs them on every pull request.
-- No accessibility checker (axe or similar), no browser and no assistive technology has been used
-  on any picture.
+- **No screen reader, magnifier or other assistive technology has been used on any picture**, and
+  no accessibility checker (axe or similar) or browser has been run against one.
 
 ## Known limitations
 
@@ -67,7 +67,6 @@ assistive technology:
   its text shrinks with it; at its own size it scrolls sideways.
 - The `<svg>` states no language (`xml:lang`), so a standalone file opened in a browser has none.
 - That no color pair outside the token tables is drawn is known from the source, not a test.
-- Nothing above has been tried with a screen reader, magnifier or braille display.
 
 ## Change history
 
