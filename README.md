@@ -109,6 +109,12 @@ is carried whole in a tooltip, and every door row has one.
 It registers **no transreptor**: a `text/turtle → image/svg+xml` conversion would
 be chosen for any Turtle at all, and most Turtle is not an arrangement.
 
+## Accessibility
+
+[ACCESSIBILITY.md](ACCESSIBILITY.md) says what makes the picture accessible, how that is tested,
+what is not (the `<desc>` summarizes rather than listing every door, among other things), and how
+to report a barrier.
+
 ## License
 
 MIT OR Apache-2.0.
