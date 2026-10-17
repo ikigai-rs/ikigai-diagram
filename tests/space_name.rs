@@ -86,3 +86,11 @@ fn a_named_space_reached_twice_is_drawn_once_and_referenced_after() {
         );
     }
 }
+
+#[test]
+fn the_picture_states_its_language() {
+    let svg = ikigai_diagram::render(&ikigai_core::Topology::new(ikigai_core::SpaceKind::Opaque));
+    let root = svg.lines().next().expect("a root element");
+    assert!(root.contains("xml:lang=\"en\""), "{root}");
+    assert!(root.contains(" lang=\"en\""), "{root}");
+}

@@ -90,3 +90,60 @@ fn the_picture_carries_both_schemes_and_the_dark_one_is_behind_the_media_query()
     // SVG over a dark page.
     assert!(svg.contains("<rect class=\"ikd-bg\""));
 }
+
+/// Every color the picture states, as `#rrggbb`, in the order it appears.
+fn hex_colors(svg: &str) -> Vec<String> {
+    let bytes = svg.as_bytes();
+    let mut out = Vec::new();
+    for (i, _) in svg.match_indices('#') {
+        let end = (i + 7).min(bytes.len());
+        let candidate = &svg[i..end];
+        if candidate.len() == 7 && candidate[1..].bytes().all(|b| b.is_ascii_hexdigit()) {
+            out.push(candidate.to_ascii_lowercase());
+        }
+    }
+    out
+}
+
+#[test]
+fn the_picture_draws_no_color_outside_the_token_tables() {
+    let mut tokens: Vec<String> = Vec::new();
+    for scheme in [&LIGHT, &DARK] {
+        tokens.push(scheme.background.to_ascii_lowercase());
+        tokens.push(scheme.text.to_ascii_lowercase());
+        tokens.push(scheme.muted.to_ascii_lowercase());
+        for (_, outline, band) in scheme.kinds {
+            tokens.push(outline.to_ascii_lowercase());
+            tokens.push(band.to_ascii_lowercase());
+        }
+        for (_, fg) in scheme.marks {
+            tokens.push(fg.to_ascii_lowercase());
+        }
+    }
+    for text in ["every-kind", "tic-tac-toe", "named-module"] {
+        let ttl = std::fs::read_to_string(format!(
+            "{}/tests/fixtures/{text}.ttl",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("the fixture");
+        let tree = ikigai_core::Topology::from_turtle(&ttl).expect("it parses");
+        let svg = ikigai_diagram::render(&tree);
+        let drawn = hex_colors(&svg);
+        assert!(!drawn.is_empty(), "{text}: the picture states no colors");
+        for c in &drawn {
+            assert!(tokens.contains(c), "{text}: {c} is not a palette token");
+        }
+        // Colors reach the page only through the stylesheet's classes: no inline
+        // `style`, and the only paint attribute values are keywords.
+        assert!(!svg.contains("style=\""), "{text}: an inline style");
+        for attr in ["fill=\"", "stroke=\""] {
+            for (i, _) in svg.match_indices(attr) {
+                let value = svg[i + attr.len()..].split('"').next().unwrap_or("");
+                assert!(
+                    matches!(value, "none" | "currentColor" | "transparent"),
+                    "{text}: {attr}{value}\" is not a keyword"
+                );
+            }
+        }
+    }
+}

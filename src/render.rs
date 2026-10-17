@@ -116,7 +116,7 @@ impl Layout {
         let mut out = String::with_capacity(self.body.len() + 4096);
         let _ = write!(
             out,
-            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{WIDTH}\" height=\"{h}\" \
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" xml:lang=\"en\" lang=\"en\" width=\"{WIDTH}\" height=\"{h}\" \
              viewBox=\"0 0 {WIDTH} {h}\" role=\"img\" aria-labelledby=\"{id}-title {id}-desc\" \
              class=\"ikd\">\n<title id=\"{id}-title\">{title}</title>\n\
              <desc id=\"{id}-desc\">{desc}</desc>\n<style>{style}</style>\n\
