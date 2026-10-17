@@ -35,6 +35,9 @@ as an `<img>` with its own `alt` text), and the host's page is the host's.
   dark under `prefers-color-scheme: dark`, and the page is painted, so dark text never lands on a
   dark host page through a transparent background. Text holds 4.5:1 on every surface it sits on
   (SC 1.4.3) and every box outline 3:1 against the page (SC 1.4.11), measured with `ikigai-a11y`.
+- **A language.** The root `<svg>` states `xml:lang="en"` and `lang="en"`, because the words it
+  draws (kinds, match kinds, the `<desc>`) are English; names and patterns from the arrangement
+  are drawn as they are.
 - **Nothing overlaps or overruns.** Text too long for its column ends in an ellipsis.
 
 ## How it is tested
@@ -45,6 +48,9 @@ as an `<img>` with its own `alt` text), and the host's page is the host's.
 - The unit tests in `src/render.rs` check that no two lines of text overlap and every line stays
   inside its box and the 960-pixel width, on a host-sized arrangement (138 doors), every kind of
   space, and a tree nested 60 deep; and that truncation, wrapping and escaping work.
+- `tests/contrast.rs` also checks that every color in the three golden pictures is a token, that
+  no inline `style` is used and that `fill` and `stroke` attributes hold only keywords, so no
+  color pair outside the tables is drawn. `tests/space_name.rs` checks the language.
 - The doctest on `render` and `tests/space_name.rs` check `role="img"`, real text and the names in
   the `<desc>`; `tests/golden.rs` holds three pictures byte for byte, so any change to the markup
   shows up as a diff. All ran and passed on main at `43d3e67` on 2026-10-15 (31 tests and one
@@ -65,8 +71,6 @@ assistive technology:
   user cannot open and a screen reader does not reach inside `role="img"`.
 - The picture is a fixed 960 pixels wide with 13-pixel text. Scaled down to fit a narrow screen,
   its text shrinks with it; at its own size it scrolls sideways.
-- The `<svg>` states no language (`xml:lang`), so a standalone file opened in a browser has none.
-- That no color pair outside the token tables is drawn is known from the source, not a test.
 
 ## Change history
 
@@ -74,6 +78,7 @@ assistive technology:
 |---|---|
 | 2026-09-30 | The renderer, with `role="img"`, `<title>`, `<desc>`, real text and the contrast test ([PR 1](https://github.com/ikigai-rs/ikigai-diagram/pull/1)). |
 | 2026-10-10 | The `<desc>` states the names the spaces claim ([PR 2](https://github.com/ikigai-rs/ikigai-diagram/pull/2)). |
+| 2026-10-17 | The picture states its language; a test that no color is drawn outside the tokens. |
 | 2026-10-15 | This file ([PR 6](https://github.com/ikigai-rs/ikigai-diagram/pull/6)). |
 
 ## Contributing
