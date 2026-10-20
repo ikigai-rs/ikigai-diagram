@@ -878,20 +878,13 @@ fn clean(s: &str) -> String {
         .collect()
 }
 
-/// Escape text for an XML text node or attribute.
+/// Escape text for an XML text node or attribute: [`clean`] first, then the ecosystem's one
+/// escaper. `clean` stays a pre-pass because the shared escaper keeps tab, line feed and
+/// carriage return (right for HTML), while here a pattern with a newline in it must show as
+/// one visible U+FFFD, not as a break a `<title>` tooltip would honor and the column count
+/// of [`wrap`] would not see.
 fn xml(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in clean(s).chars() {
-        match c {
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            '\'' => out.push_str("&apos;"),
-            c => out.push(c),
-        }
-    }
-    out
+    ikigai_fn::html::html_text(&clean(s))
 }
 
 /// The class a match-kind or rule-kind keyword is marked with.
@@ -1122,7 +1115,58 @@ mod tests {
 
     #[test]
     fn text_is_escaped_and_controls_are_replaced() {
-        assert_eq!(xml("a<b>&\"c'\n"), "a&lt;b&gt;&amp;&quot;c&apos;\u{fffd}");
+        // Moved from the hand escaper; `'` is now the shared `&#39;` (was `&apos;`, equally
+        // valid XML), and `clean` still turns the newline into U+FFFD.
+        assert_eq!(xml("a<b>&\"c'\n"), "a&lt;b&gt;&amp;&quot;c&#39;\u{fffd}");
+    }
+
+    /// The shared escaper and `xml` differ in exactly two ways, over the ikigai-fn vectors'
+    /// escape inputs and this crate's own: `'` is `&#39;` not `&apos;`, and `xml` also
+    /// replaces tab, LF, CR, DEL and C1 controls (via `clean`). Nothing else.
+    #[test]
+    fn xml_is_the_shared_escaper_after_clean() {
+        use ikigai_fn::html::{attr, html_text};
+        let inputs = [
+            "",
+            "plain text",
+            "&",
+            "<",
+            ">",
+            "\"",
+            "'",
+            "<script>alert('x')</script>",
+            "Tom & Jerry's \"show\"",
+            "&amp; is already an entity",
+            "&#39;",
+            "tab\tline\nreturn\r",
+            "nul\u{0}soh\u{1}esc\u{1b}us\u{1f}",
+            "del\u{7f} stays",
+            "caf\u{e9} \u{2713} \u{65e5}\u{672c} \u{1f600}",
+            "nbsp\u{a0}and line sep\u{2028}",
+            "$h{urn:example:x}",
+            "a=b c`d",
+            "it's \"quoted\" & <tagged>",
+            "two\nlines",
+            "a\tb",
+            "a\r\nb",
+            "c1\u{85}\u{9f}x",
+            "\u{fffd} already",
+        ];
+        for i in inputs {
+            assert_eq!(attr(i), html_text(i));
+            let ours = xml(i);
+            assert_eq!(ours, html_text(&clean(i)), "{i:?}");
+            let shared = html_text(i);
+            if ours != shared {
+                // Only a control character that `clean` replaces may explain it.
+                assert!(
+                    i.chars().any(char::is_control),
+                    "{i:?}: {ours:?} vs {shared:?}"
+                );
+                assert!(!ours.contains(|c: char| c.is_control()), "{ours:?}");
+            }
+            assert!(!ours.contains("&apos;"), "{ours:?}");
+        }
     }
 
     #[test]
