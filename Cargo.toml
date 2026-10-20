@@ -24,12 +24,12 @@ ikigai-core = { version = "0.1.89", features = ["declare"] }
 
 [dev-dependencies]
 futures = "0.3"
-# The module recipe as one test (`tests/conformance.rs`). 0.8.0 is the current
-# definition of "done": it adds REQUIRED (a required input dropped must be refused,
-# typed), after 0.7's VALIDATE and 0.6's SPACE-NAME (a self-named space claims
-# `urn:iki:space:<module>` over the same doors on every call). ⚠ ^0.8 = <0.9: a
-# CEILING, so a later minor is adopted deliberately, not silently.
-ikigai-conformance = "0.8.0"
+# The module recipe as one test (`tests/conformance.rs`). 0.10.0 is the current
+# definition of "done": 0.9 added core 0.1.105's contract-shape checks and RECOMPUTE,
+# 0.10 adds FAILURES (off unless a suite opts in with `check_failures()`, which this
+# one does not yet). ⚠ ^0.10 = <0.11: a CEILING, so a later minor is adopted
+# deliberately, not silently.
+ikigai-conformance = "0.10.0"
 # The contrast floor this ecosystem enforces (`tests/contrast.rs`): `ratio` and the
 # thresholds, from the crate that owns them, rather than a second copy of the WCAG
 # math. A dev-dependency only — the palette is constant, so checking it is a test,
