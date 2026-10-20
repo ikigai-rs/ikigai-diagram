@@ -22,6 +22,11 @@ categories = ["visualization", "wasm"]
 # line every module shares.
 ikigai-core = { version = "0.1.89", features = ["declare"] }
 
+# The ecosystem's ONE escaping module (`ikigai_fn::html`, ledger #1813): every piece of
+# text the renderer writes into the SVG goes through it. ⚠ Under 0.x caret rules this is
+# also a CEILING (<0.6.0).
+ikigai-fn = "0.5.0"
+
 [dev-dependencies]
 futures = "0.3"
 # The module recipe as one test (`tests/conformance.rs`). 0.10.0 is the current
