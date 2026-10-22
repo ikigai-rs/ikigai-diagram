@@ -1,0 +1,31 @@
+@prefix ik: <https://ikigai-rs.dev/ns#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:example:space:live> a ik:DynamicSpace ;
+    ik:declaration <urn:example:declaration:live> ;
+    ik:space <urn:ikigai:space:_:1> .
+
+<urn:ikigai:space:_:1> a ik:Fallback ;
+    ik:layers <urn:ikigai:space:_:1:layer:1> .
+<urn:ikigai:space:_:1:layer:1> rdf:first <urn:ikigai:space:_:2> ;
+    rdf:rest <urn:ikigai:space:_:1:layer:2> .
+<urn:ikigai:space:_:1:layer:2> rdf:first <urn:ikigai:space:_:4> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:2> a ik:Mount ;
+    ik:prefix "urn:live:" ;
+    ik:space <urn:ikigai:space:_:3> .
+
+<urn:ikigai:space:_:3> a ik:EndpointSpace ;
+    ik:pattern "urn:live:hello" ;
+    ik:doors <urn:ikigai:space:_:3:doors:1> .
+<urn:ikigai:space:_:3:doors:1> rdf:first <urn:ikigai:space:_:3:door:1> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:3:door:1> a ik:Door ;
+    ik:pattern "urn:live:hello" ;
+    ik:matchKind "exact" ;
+    ik:endpointName "live-hello" .
+
+<urn:ikigai:space:_:4> a ik:OpaqueSpace .

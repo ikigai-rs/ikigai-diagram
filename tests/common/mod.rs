@@ -30,7 +30,7 @@ fn leaf(doors: Vec<Door>) -> Topology {
 /// doors, a confined door, and a pattern long enough to be cut), an alias with both
 /// rule kinds, a limit, a level with seals and a namespace, a rewrite over a named
 /// opaque peer, a confine, the SAME named mount again, an anonymous opaque space,
-/// and an endpoint space with no doors.
+/// an endpoint space with no doors, and a dynamic space with its current inner tree.
 pub fn every_kind() -> Topology {
     let sandbox = leaf(vec![Door::new(
         "urn:example:sandbox:read",
@@ -96,7 +96,8 @@ pub fn every_kind() -> Topology {
         .child(confine)
         .child(module)
         .child(Topology::opaque(None))
-        .child(leaf(Vec::new()));
+        .child(leaf(Vec::new()))
+        .child(dynamic_space());
     let corridor = leaf(vec![Door::new(
         "urn:example:game:state",
         MatchKind::Exact,
@@ -173,4 +174,26 @@ pub fn named_module_kernel() -> Kernel {
         Arc::new(Mount::new("urn:mirror:", diagram)),
     ]);
     Kernel::new(Arc::new(host))
+}
+
+/// A dynamic declaration and its current inner tree, including nested spaces.
+pub fn dynamic_space() -> Topology {
+    Topology::new(SpaceKind::Dynamic {
+        declaration: Iri::parse("urn:example:declaration:live").expect("a declaration IRI"),
+    })
+    .with_id(iri("urn:example:space:live"))
+    .child(
+        Topology::new(SpaceKind::Fallback)
+            .child(
+                Topology::new(SpaceKind::Mount {
+                    prefix: "urn:live:".into(),
+                })
+                .child(leaf(vec![Door::new(
+                    "urn:live:hello",
+                    MatchKind::Exact,
+                    "live-hello",
+                )])),
+            )
+            .child(Topology::opaque(None)),
+    )
 }

@@ -87,3 +87,37 @@ fn the_named_module_picture_is_stable() {
     assert_eq!(svg, ikigai_diagram::render(&tree), "deterministic");
     matches("golden/named-module.svg", &svg);
 }
+
+#[test]
+fn dynamic_space_has_its_own_label_declaration_and_inner_tree() {
+    let svg = ikigai_diagram::render(&common::dynamic_space());
+    assert!(
+        svg.contains(">Dynamic space</tspan>"),
+        "dynamic header: {svg}"
+    );
+    assert!(svg.contains("urn:example:declaration:live"));
+    assert!(svg.contains("ikd-k-dynamic"));
+    assert!(svg.contains("1 dynamic space"));
+    assert!(svg.contains("outermost space is a dynamic space"));
+    assert!(!svg.contains("Unknown kind"));
+    assert!(svg.contains(">Fallback</tspan>"));
+    assert!(svg.contains(">Mount</tspan>"));
+    assert!(svg.contains("live-hello"));
+}
+
+#[test]
+fn the_dynamic_fixture_is_what_core_writes_for_it() {
+    let tree = common::dynamic_space();
+    matches("fixtures/dynamic.ttl", &tree.to_turtle());
+    let text = committed("fixtures/dynamic.ttl").expect("the fixture");
+    assert_eq!(Topology::from_turtle(&text).expect("it parses"), tree);
+}
+
+#[test]
+fn the_dynamic_picture_is_stable() {
+    let text = committed("fixtures/dynamic.ttl").expect("the fixture");
+    let tree = Topology::from_turtle(&text).expect("it parses");
+    let svg = ikigai_diagram::render(&tree);
+    assert_eq!(svg, ikigai_diagram::render(&tree), "deterministic");
+    matches("golden/dynamic.svg", &svg);
+}

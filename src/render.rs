@@ -588,6 +588,11 @@ fn describe(t: &Topology) -> (Kind, &'static str, String) {
             ),
         ),
         SpaceKind::Mount { prefix } => (Kind::Mount, "Mount", prefix.clone()),
+        SpaceKind::Dynamic { declaration } => (
+            Kind::Dynamic,
+            "Dynamic space",
+            declaration.as_str().to_string(),
+        ),
         SpaceKind::Alias { rules, max_hops } => (
             Kind::Alias,
             "Alias",
@@ -677,6 +682,7 @@ struct Counts {
     chains: usize,
     fallbacks: usize,
     mounts: usize,
+    dynamics: usize,
     aliases: usize,
     rules: usize,
     limits: usize,
@@ -705,6 +711,7 @@ impl Counts {
             SpaceKind::Chain { .. } => self.chains += 1,
             SpaceKind::Fallback => self.fallbacks += 1,
             SpaceKind::Mount { .. } => self.mounts += 1,
+            SpaceKind::Dynamic { .. } => self.dynamics += 1,
             SpaceKind::Alias { rules, .. } => {
                 self.aliases += 1;
                 self.rules += rules.len();
@@ -759,6 +766,7 @@ impl Counts {
         };
         add(self.fallbacks, "fallback", "fallbacks");
         add(self.mounts, "mount", "mounts");
+        add(self.dynamics, "dynamic space", "dynamic spaces");
         add(self.aliases, "alias", "aliases");
         add(self.levels, "level", "levels");
         add(self.limits, "limit", "limits");
@@ -1071,6 +1079,19 @@ mod tests {
     fn the_every_kind_fixture_is_legible() {
         let turtle = include_str!("../tests/fixtures/every-kind.ttl");
         assert_legible(&Topology::from_turtle(turtle).expect("the fixture parses"));
+    }
+
+    #[test]
+    fn dynamic_declarations_are_legible_and_long_iris_keep_the_full_tooltip() {
+        let declaration = format!("urn:example:declaration:{}", "long".repeat(80));
+        let tree = Topology::new(SpaceKind::Dynamic {
+            declaration: Iri::parse(&declaration).expect("a declaration IRI"),
+        })
+        .child(Topology::new(SpaceKind::Opaque));
+        assert_legible(&tree);
+        let svg = render(&tree);
+        assert!(svg.contains(&format!("<title>Dynamic space  {declaration}</title>")));
+        assert!(svg.contains('…'));
     }
 
     #[test]
