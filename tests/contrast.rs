@@ -120,7 +120,7 @@ fn the_picture_draws_no_color_outside_the_token_tables() {
             tokens.push(fg.to_ascii_lowercase());
         }
     }
-    for text in ["every-kind", "tic-tac-toe", "named-module"] {
+    for text in ["every-kind", "tic-tac-toe", "named-module", "dynamic"] {
         let ttl = std::fs::read_to_string(format!(
             "{}/tests/fixtures/{text}.ttl",
             env!("CARGO_MANIFEST_DIR")

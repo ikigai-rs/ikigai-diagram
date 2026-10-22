@@ -28,7 +28,7 @@ as an `<img>` with its own `alt` text), and the host's page is the host's.
   page do not collide.
 - **Real text.** Every label is a `<text>` element, never a path.
 - **Not color alone.** Every box carries its kind as a word in its header band (Chain, Fallback,
-  Mount, Alias, Limit, Level, ...), and door rows say their match kind in words (`exact`,
+  Mount, Dynamic space, Alias, Limit, Level, ...), and door rows say their match kind in words (`exact`,
   `template`, `prefix`, `custom`); the colors and the dashed (limit) and dotted (opaque) outlines
   repeat what the words say.
 - **Contrast in both schemes.** Every color is a token from `src/palette.rs`, light by default and
@@ -48,11 +48,11 @@ as an `<img>` with its own `alt` text), and the host's page is the host's.
 - The unit tests in `src/render.rs` check that no two lines of text overlap and every line stays
   inside its box and the 960-pixel width, on a host-sized arrangement (138 doors), every kind of
   space, and a tree nested 60 deep; and that truncation, wrapping and escaping work.
-- `tests/contrast.rs` also checks that every color in the three golden pictures is a token, that
+- `tests/contrast.rs` also checks that every color in the golden pictures is a token, that
   no inline `style` is used and that `fill` and `stroke` attributes hold only keywords, so no
   color pair outside the tables is drawn. `tests/space_name.rs` checks the language.
 - The doctest on `render` and `tests/space_name.rs` check `role="img"`, real text and the names in
-  the `<desc>`; `tests/golden.rs` holds three pictures byte for byte, so any change to the markup
+  the `<desc>`; `tests/golden.rs` holds pictures byte for byte, so any change to the markup
   shows up as a diff. All ran and passed on main at `43d3e67` on 2026-10-15 (31 tests and one
   doctest; one test that only prints a picture is ignored). CI runs them on every pull request.
 - **No screen reader, magnifier or other assistive technology has been used on any picture**, and

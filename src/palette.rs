@@ -17,6 +17,7 @@ pub(crate) enum Kind {
     Chain,
     Fallback,
     Mount,
+    Dynamic,
     Alias,
     Limit,
     Level,
@@ -33,10 +34,11 @@ pub(crate) enum Kind {
 impl Kind {
     /// Every kind, in the order the tables list them.
     #[cfg(test)]
-    pub(crate) const ALL: [Kind; 12] = [
+    pub(crate) const ALL: [Kind; 13] = [
         Kind::Chain,
         Kind::Fallback,
         Kind::Mount,
+        Kind::Dynamic,
         Kind::Alias,
         Kind::Limit,
         Kind::Level,
@@ -55,6 +57,7 @@ impl Kind {
             Kind::Chain => "chain",
             Kind::Fallback => "fallback",
             Kind::Mount => "mount",
+            Kind::Dynamic => "dynamic",
             Kind::Alias => "alias",
             Kind::Limit => "limit",
             Kind::Level => "level",
@@ -81,7 +84,7 @@ pub struct Scheme {
     pub muted: &'static str,
     /// Per kind: `(class, outline, header band)`. Text of both weights sits on the
     /// header band; the outline sits on the background.
-    pub kinds: [(&'static str, &'static str, &'static str); 12],
+    pub kinds: [(&'static str, &'static str, &'static str); 13],
     /// The match-kind marks on door rows (`exact`, `template`, `prefix`,
     /// `custom`), as text on the background.
     pub marks: [(&'static str, &'static str); 4],
@@ -97,6 +100,7 @@ pub const LIGHT: Scheme = Scheme {
         ("chain", "#59636e", "#f6f8fa"),
         ("fallback", "#0969da", "#ddf4ff"),
         ("mount", "#1a7f37", "#dafbe1"),
+        ("dynamic", "#1a7f37", "#dafbe1"),
         ("alias", "#8250df", "#fbefff"),
         ("limit", "#cf222e", "#ffebe9"),
         ("level", "#9a6700", "#fff8c5"),
@@ -125,6 +129,7 @@ pub const DARK: Scheme = Scheme {
         ("chain", "#9198a1", "#161b22"),
         ("fallback", "#4493f8", "#0c1f3a"),
         ("mount", "#3fb950", "#0d2416"),
+        ("dynamic", "#3fb950", "#0d2416"),
         ("alias", "#ab7df8", "#1d1533"),
         ("limit", "#f85149", "#2a1214"),
         ("level", "#d29922", "#261e0c"),

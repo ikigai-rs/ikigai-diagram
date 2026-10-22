@@ -40,6 +40,8 @@
 <urn:example:space:host:layer:8> rdf:first <urn:ikigai:space:_:9> ;
     rdf:rest <urn:example:space:host:layer:9> .
 <urn:example:space:host:layer:9> rdf:first <urn:ikigai:space:_:10> ;
+    rdf:rest <urn:example:space:host:layer:10> .
+<urn:example:space:host:layer:10> rdf:first <urn:example:space:live> ;
     rdf:rest rdf:nil .
 
 <urn:example:space:mod> a ik:Mount ;
@@ -172,3 +174,31 @@
 
 <urn:ikigai:space:_:10> a ik:EndpointSpace ;
     ik:doors rdf:nil .
+
+<urn:example:space:live> a ik:DynamicSpace ;
+    ik:declaration <urn:example:declaration:live> ;
+    ik:space <urn:ikigai:space:_:11> .
+
+<urn:ikigai:space:_:11> a ik:Fallback ;
+    ik:layers <urn:ikigai:space:_:11:layer:1> .
+<urn:ikigai:space:_:11:layer:1> rdf:first <urn:ikigai:space:_:12> ;
+    rdf:rest <urn:ikigai:space:_:11:layer:2> .
+<urn:ikigai:space:_:11:layer:2> rdf:first <urn:ikigai:space:_:14> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:12> a ik:Mount ;
+    ik:prefix "urn:live:" ;
+    ik:space <urn:ikigai:space:_:13> .
+
+<urn:ikigai:space:_:13> a ik:EndpointSpace ;
+    ik:pattern "urn:live:hello" ;
+    ik:doors <urn:ikigai:space:_:13:doors:1> .
+<urn:ikigai:space:_:13:doors:1> rdf:first <urn:ikigai:space:_:13:door:1> ;
+    rdf:rest rdf:nil .
+
+<urn:ikigai:space:_:13:door:1> a ik:Door ;
+    ik:pattern "urn:live:hello" ;
+    ik:matchKind "exact" ;
+    ik:endpointName "live-hello" .
+
+<urn:ikigai:space:_:14> a ik:OpaqueSpace .
