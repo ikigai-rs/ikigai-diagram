@@ -4,7 +4,7 @@
 
 use ikigai_a11y::config::DEFAULT_MIN;
 use ikigai_a11y::{ratio, Rgba};
-use ikigai_diagram::palette::{Scheme, DARK, LIGHT};
+use ikigai_diagram::palette::{Scheme, StateScheme, DARK, DARK_STATE, LIGHT, LIGHT_STATE};
 
 /// WCAG 2.2 SC 1.4.11 (non-text contrast): a box's outline is what tells one box
 /// from the next, so it holds 3:1 against the page it is drawn on.
@@ -61,11 +61,50 @@ fn pairs(scheme: &Scheme) -> Vec<(String, &'static str, &'static str, f64)> {
     out
 }
 
+/// Every pair the STATE layer draws, over its scheme's page: text and muted text on a
+/// governor's band and on the summary's header band (the same token), the summary's
+/// outline on the page, and every state mark as text on the page.
+fn state_pairs(
+    scheme: &Scheme,
+    state: &StateScheme,
+) -> Vec<(String, &'static str, &'static str, f64)> {
+    let mut out = vec![
+        (
+            "text on the state band".to_string(),
+            scheme.text,
+            state.band,
+            DEFAULT_MIN,
+        ),
+        (
+            "muted text on the state band".to_string(),
+            scheme.muted,
+            state.band,
+            DEFAULT_MIN,
+        ),
+        (
+            "the state outline on the page".to_string(),
+            state.outline,
+            scheme.background,
+            NON_TEXT_MIN,
+        ),
+    ];
+    for (mark, fg) in state.marks {
+        out.push((
+            format!("the {mark} state mark on the page"),
+            fg,
+            scheme.background,
+            DEFAULT_MIN,
+        ));
+    }
+    out
+}
+
 #[test]
 fn every_pair_meets_the_floor_in_both_schemes() {
     let mut failures = Vec::new();
-    for scheme in [&LIGHT, &DARK] {
-        for (what, fg, bg, floor) in pairs(scheme) {
+    for (scheme, state) in [(&LIGHT, &LIGHT_STATE), (&DARK, &DARK_STATE)] {
+        assert_eq!(scheme.name, state.name);
+        for (what, fg, bg, floor) in pairs(scheme).into_iter().chain(state_pairs(scheme, state)) {
             let r = ratio(color(fg), color(bg));
             if r < floor {
                 failures.push(format!(
@@ -120,14 +159,37 @@ fn the_picture_draws_no_color_outside_the_token_tables() {
             tokens.push(fg.to_ascii_lowercase());
         }
     }
+    for state in [&LIGHT_STATE, &DARK_STATE] {
+        tokens.push(state.outline.to_ascii_lowercase());
+        tokens.push(state.band.to_ascii_lowercase());
+        for (_, fg) in state.marks {
+            tokens.push(fg.to_ascii_lowercase());
+        }
+    }
+    let read = |relative: &str| {
+        std::fs::read_to_string(format!("{}/tests/{relative}", env!("CARGO_MANIFEST_DIR")))
+            .expect("the fixture")
+    };
+    let mut pictures: Vec<(&str, String)> = Vec::new();
     for text in ["every-kind", "tic-tac-toe", "named-module", "dynamic"] {
-        let ttl = std::fs::read_to_string(format!(
-            "{}/tests/fixtures/{text}.ttl",
-            env!("CARGO_MANIFEST_DIR")
-        ))
-        .expect("the fixture");
+        let ttl = read(&format!("fixtures/{text}.ttl"));
         let tree = ikigai_core::Topology::from_turtle(&ttl).expect("it parses");
-        let svg = ikigai_diagram::render(&tree);
+        pictures.push((text, ikigai_diagram::render(&tree)));
+    }
+    // The state layer, over every state value.
+    let governed = ikigai_core::Topology::from_turtle(&read("fixtures/state/governed.ttl"))
+        .expect("it parses");
+    for board in ["board", "every-state"] {
+        let board = ikigai_diagram::state::Board::from_turtle(&read(&format!(
+            "fixtures/state/{board}.ttl"
+        )))
+        .expect("the board parses");
+        pictures.push((
+            "state",
+            ikigai_diagram::render_with_state(&governed, &board),
+        ));
+    }
+    for (text, svg) in pictures {
         let drawn = hex_colors(&svg);
         assert!(!drawn.is_empty(), "{text}: the picture states no colors");
         for c in &drawn {
@@ -146,4 +208,25 @@ fn the_picture_draws_no_color_outside_the_token_tables() {
             }
         }
     }
+}
+
+#[test]
+fn the_state_layer_carries_both_schemes_and_its_dark_one_is_behind_the_media_query() {
+    let read = |relative: &str| {
+        std::fs::read_to_string(format!("{}/tests/{relative}", env!("CARGO_MANIFEST_DIR")))
+            .expect("the fixture")
+    };
+    let tree = ikigai_core::Topology::from_turtle(&read("fixtures/state/governed.ttl"))
+        .expect("it parses");
+    let board = ikigai_diagram::state::Board::from_turtle(&read("fixtures/state/board.ttl"))
+        .expect("the board parses");
+    let svg = ikigai_diagram::render_with_state(&tree, &board);
+    let light = format!(".ikd-t-state{{fill:{}}}", LIGHT_STATE.band);
+    let dark = format!(".ikd-t-state{{fill:{}}}", DARK_STATE.band);
+    let at_light = svg.find(&light).expect("the light state band");
+    let at_dark = svg.find(&dark).expect("the dark state band");
+    let media = svg[..at_dark]
+        .rfind("@media (prefers-color-scheme:dark){")
+        .expect("a media query before the dark state tokens");
+    assert!(at_light < media, "the light tokens are outside the query");
 }

@@ -29,10 +29,14 @@ pub(crate) enum Kind {
     Unknown,
     /// Not a space: the picture of a resource that does not declare an arrangement.
     Problem,
+    /// Not a space: the state layer's summary box (`urn:diagram:state`). Its tokens are
+    /// in [`StateScheme`], not [`Scheme::kinds`], so it is not in `ALL`.
+    State,
 }
 
 impl Kind {
-    /// Every kind, in the order the tables list them.
+    /// Every kind [`Scheme::kinds`] lists, in its order ([`Kind::State`] has a table
+    /// of its own).
     #[cfg(test)]
     pub(crate) const ALL: [Kind; 13] = [
         Kind::Chain,
@@ -67,6 +71,7 @@ impl Kind {
             Kind::Confine => "confine",
             Kind::Unknown => "unknown",
             Kind::Problem => "problem",
+            Kind::State => "state",
         }
     }
 }
@@ -148,6 +153,64 @@ pub const DARK: Scheme = Scheme {
     ],
 };
 
+/// One color scheme's tokens for the STATE layer (`urn:diagram:state`): the governor
+/// bands drawn over a governed space, the summary box, and the state marks.
+///
+/// A table of its own rather than a fourteenth row of [`Scheme::kinds`], because that
+/// array's length is part of a public type. A plain arrangement's stylesheet does not
+/// carry these rules, so a plain picture is byte-for-byte what it was.
+#[derive(Debug)]
+pub struct StateScheme {
+    /// `light` or `dark`, as its [`Scheme`].
+    pub name: &'static str,
+    /// The summary box's outline, on the page.
+    pub outline: &'static str,
+    /// A governor's band: text and muted text of the scheme sit on it.
+    pub band: &'static str,
+    /// The state marks (`go`, `wait`, `stop`, `unknown`), as bold text on the page.
+    /// Every mark is a WORD (`open`, `full`, `half-open`, ...); the color repeats it.
+    pub marks: [(&'static str, &'static str); 4],
+}
+
+/// The light state tokens.
+pub const LIGHT_STATE: StateScheme = StateScheme {
+    name: "light",
+    outline: "#bf3989",
+    band: "#ffeff7",
+    marks: [
+        ("go", "#1a7f37"),
+        ("wait", "#7d4e00"),
+        ("stop", "#cf222e"),
+        ("unknown", "#59636e"),
+    ],
+};
+
+/// The dark state tokens, selected by `prefers-color-scheme: dark`.
+pub const DARK_STATE: StateScheme = StateScheme {
+    name: "dark",
+    outline: "#db61a2",
+    band: "#2d1524",
+    marks: [
+        ("go", "#3fb950"),
+        ("wait", "#d29922"),
+        ("stop", "#f85149"),
+        ("unknown", "#9198a1"),
+    ],
+};
+
+/// The state layer's class rules for one scheme.
+fn state_rules(scheme: &StateScheme) -> String {
+    let mut css = format!(
+        ".ikd-k-state{{stroke:{outline}}}.ikd-t-state{{fill:{band}}}",
+        outline = scheme.outline,
+        band = scheme.band,
+    );
+    for (mark, color) in scheme.marks {
+        css.push_str(&format!(".ikd-st-{mark}{{fill:{color}}}"));
+    }
+    css
+}
+
 /// The class rules for one scheme.
 fn rules(scheme: &Scheme) -> String {
     let mut css = format!(
@@ -179,6 +242,17 @@ pub(crate) fn stylesheet() -> String {
          @media (prefers-color-scheme:dark){{{dark}}}",
         light = rules(&LIGHT),
         dark = rules(&DARK),
+    )
+}
+
+/// The `<style>` body of a picture WITH a state layer: [`stylesheet`] plus the state
+/// tokens, light and then dark under the same media query.
+pub(crate) fn stylesheet_with_state() -> String {
+    format!(
+        "{base}{light}@media (prefers-color-scheme:dark){{{dark}}}",
+        base = stylesheet(),
+        light = state_rules(&LIGHT_STATE),
+        dark = state_rules(&DARK_STATE),
     )
 }
 

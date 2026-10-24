@@ -46,8 +46,10 @@ path appended.
 |---|---|---|
 | `urn:diagram:kernel` | — | `urn:cap:kernel:inspect`, because `urn:kernel:topology` does |
 | `urn:diagram:arrangement` | `of`: the IRI of an arrangement's Turtle (required, so a positional or piped name lands in it) | whatever reading `of` needs, under the caller's own capability |
+| `urn:diagram:state` | — | what `urn:diagram:kernel` needs; the state layer shows what the caller may read of `urn:throttle:state` |
+| `urn:diagram:state:arrangement` | `of`, as above | what `urn:diagram:arrangement` needs; the same state layer |
 
-Both answer `image/svg+xml`. `of` takes a NAME: piping a Turtle document into it
+All four answer `image/svg+xml`. `of` takes a NAME: piping a Turtle document into it
 is refused with a message saying so.
 
 From Rust, the renderer is a pure function over core's typed tree:
@@ -84,6 +86,41 @@ reached twice is drawn once, and referenced where it is met again. A module's
 configuration-free space names itself `urn:iki:space:<module>`, so the picture of
 a host says which modules it holds (`tests/golden/named-module.svg`). Text too long for its column ends in an ellipsis and
 is carried whole in a tooltip, and every door row has one.
+
+## Governor state over the arrangement
+
+`urn:diagram:state` draws what ikigai-throttle's governors hold now (a circuit open or
+half-open, a rate window's hits, a bulkhead's running and parked work, a failover's last
+candidate) inside the box of the space each one governs, and says it in words below the
+picture:
+
+![A test host shaped like ikigai-throttle's, with governor state: a rate-limit window full, a
+circuit half-open and another closed, a bulkhead full with work parked, and a failover
+whose last call failed at its backup candidate, each drawn in its governed space's box,
+and the same in words in a summary box below](tests/golden/state-every-state.svg)
+
+It composes two resources, the arrangement and `urn:throttle:state` (the board), and
+joins them on `thr:governs`: the IRI a governor names for the space it governs is the IRI
+`urn:kernel:topology` gives that node. A failover is opaque in topology, so it is drawn
+on whichever of its candidates' spaces the arrangement shows, and stated in words either
+way.
+
+- **Your authority shapes the picture.** The board is read under your capability and
+  lists only the governors you may read, and only those are drawn. Without a grant under
+  `urn:cap:throttle:state:*` you get `urn:diagram:kernel`'s picture byte for byte, with no
+  sign that governors exist; the board is not even asked.
+- **The plain pictures stay pure.** `urn:diagram:kernel` and `urn:diagram:arrangement`
+  never read state, so they stay as cacheable as the arrangement. The state picture is as
+  cacheable as the board: cached and redrawn on every state change when the host attaches
+  the board to its kernel (`StateBoard::attach`), live on every read when it does not.
+- **Never color alone.** Every state is a word, first on its row so a long target cut
+  with an ellipsis never cuts it; the words below the picture are a `role="status"`
+  region with `aria-live="polite"`.
+
+From Rust: `ikigai_diagram::render_with_state(&tree, &board)`, with
+`ikigai_diagram::state::Board::from_turtle(turtle)`. An empty board draws exactly what
+`render` draws. This crate reads the board's Turtle and does not depend on
+ikigai-throttle; its `thr:` namespace is one constant, `state::THR`.
 
 ## Properties it keeps
 

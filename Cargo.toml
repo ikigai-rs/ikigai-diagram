@@ -24,6 +24,12 @@ ikigai-core = { version = "0.1.109", features = ["declare"] }
 # also a CEILING (<0.6.0).
 ikigai-fn = "0.5.0"
 
+# The state overlay reads `urn:throttle:state`'s Turtle face. The same parser core's
+# `declare` feature already links (so no new crate enters the graph), at core's own
+# floors. ⚠ Under 0.x caret rules these are CEILINGS too (<0.3.0, <0.4.0).
+oxttl = "0.2.3"
+oxrdf = "0.3.0"
+
 [dev-dependencies]
 futures = "0.3"
 # The module recipe as one test (`tests/conformance.rs`). 0.10.0 is the current

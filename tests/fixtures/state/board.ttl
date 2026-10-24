@@ -1,0 +1,70 @@
+@prefix ik: <https://ikigai-rs.dev/ns#> .
+@prefix thr: <https://ikigai-rs.dev/ns/throttle#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:throttle:state> a thr:StateBoard ;
+    thr:governor <urn:throttle:state:breaker> ;
+    thr:governor <urn:throttle:state:dr> ;
+    thr:governor <urn:throttle:state:limit> ;
+    thr:governor <urn:throttle:state:pool> .
+
+<urn:throttle:state:breaker> a thr:CircuitBreaker ;
+    thr:name "breaker" ;
+    thr:governs <urn:iki:space:demo-breaker> ;
+    thr:threshold "2"^^xsd:nonNegativeInteger ;
+    thr:cooldownMillis "30000"^^xsd:nonNegativeInteger ;
+    thr:key <urn:throttle:state:breaker:key:urn:demo:breaker:down> .
+
+<urn:throttle:state:breaker:key:urn:demo:breaker:down> a thr:Circuit ;
+    thr:of <urn:throttle:state:breaker> ;
+    thr:target <urn:demo:breaker:down> ;
+    thr:failures "2"^^xsd:nonNegativeInteger ;
+    thr:state thr:Open .
+
+<urn:throttle:state:dr> a thr:Failover ;
+    thr:name "dr" ;
+    thr:candidate <urn:throttle:state:dr:candidate:0> ;
+    thr:candidate <urn:throttle:state:dr:candidate:1> ;
+    thr:key <urn:throttle:state:dr:key:urn:demo:dr:x> .
+
+<urn:throttle:state:dr:candidate:0> a thr:Candidate ;
+    thr:of <urn:throttle:state:dr> ;
+    ik:order "0"^^xsd:integer ;
+    thr:governs <urn:iki:space:demo-primary> .
+
+<urn:throttle:state:dr:candidate:1> a thr:Candidate ;
+    thr:of <urn:throttle:state:dr> ;
+    ik:order "1"^^xsd:integer ;
+    thr:governs <urn:iki:space:demo-backup> .
+
+<urn:throttle:state:dr:key:urn:demo:dr:x> a thr:Route ;
+    thr:of <urn:throttle:state:dr> ;
+    thr:target <urn:demo:dr:x> ;
+    thr:lastCandidate <urn:throttle:state:dr:candidate:1> ;
+    thr:state thr:Answered .
+
+<urn:throttle:state:limit> a thr:RateLimit ;
+    thr:name "limit" ;
+    thr:governs <urn:iki:space:demo-limit> ;
+    thr:key <urn:throttle:state:limit:key:urn:demo:limit:> .
+
+<urn:throttle:state:limit:key:urn:demo:limit:> a thr:Window ;
+    thr:of <urn:throttle:state:limit> ;
+    thr:prefix "urn:demo:limit:" ;
+    thr:max "3"^^xsd:nonNegativeInteger ;
+    thr:windowMillis "10000"^^xsd:nonNegativeInteger ;
+    thr:hits "2"^^xsd:nonNegativeInteger ;
+    thr:state thr:Admitting .
+
+<urn:throttle:state:pool> a thr:Throttle ;
+    thr:name "pool" ;
+    thr:governs <urn:iki:space:demo-pool> ;
+    thr:key <urn:throttle:state:pool:key:urn:demo:pool:> .
+
+<urn:throttle:state:pool:key:urn:demo:pool:> a thr:Bulkhead ;
+    thr:of <urn:throttle:state:pool> ;
+    thr:prefix "urn:demo:pool:" ;
+    thr:max "2"^^xsd:nonNegativeInteger ;
+    thr:running "0"^^xsd:nonNegativeInteger ;
+    thr:parked "0"^^xsd:nonNegativeInteger ;
+    thr:state thr:Admitting .
