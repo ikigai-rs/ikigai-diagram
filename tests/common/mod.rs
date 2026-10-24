@@ -197,3 +197,46 @@ pub fn dynamic_space() -> Topology {
             .child(Topology::opaque(None)),
     )
 }
+
+/// A space named the way ikigai-throttle's test host names its governed leaves
+/// (`urn:iki:space:demo-{name}`), with the doors that host gives it.
+fn demo(name: &str) -> Topology {
+    leaf(vec![
+        Door::new(format!("urn:demo:{name}:ok"), MatchKind::Exact, "ok"),
+        Door::new(format!("urn:demo:{name}:down"), MatchKind::Exact, "down"),
+    ])
+    .with_id(iri(&format!("urn:iki:space:demo-{name}")))
+}
+
+/// The arrangement the state boards govern, shaped like ikigai-throttle's test host
+/// (`tests/state.rs` at `c06ea47`): the board beside four governed spaces under a
+/// fallback. The rate limit, breaker and throttle forward their leaf's name, so topology
+/// shows the leaf; the failover is opaque. One of its candidates, the backup, is ALSO
+/// mounted on its own here, so the picture can place that candidate and not the other.
+pub fn governed() -> Topology {
+    let board = leaf(vec![
+        Door::new("urn:throttle:state", MatchKind::Exact, "throttle-state"),
+        Door::new(
+            "urn:throttle:state:{member}",
+            MatchKind::Template,
+            "throttle-state-member",
+        ),
+    ]);
+    let backup = leaf(vec![Door::new("urn:demo:dr:x", MatchKind::Exact, "backup")])
+        .with_id(iri("urn:iki:space:demo-backup"));
+    let root = Topology::new(SpaceKind::Fallback)
+        .child(board)
+        .child(demo("limit"))
+        .child(demo("breaker"))
+        .child(demo("pool"))
+        .child(Topology::opaque(None))
+        .child(
+            Topology::new(SpaceKind::Mount {
+                prefix: "urn:standby:".into(),
+            })
+            .child(backup),
+        );
+    Topology::new(SpaceKind::Chain { severed: false })
+        .with_id(iri("urn:ikigai:chain:root"))
+        .child(root)
+}

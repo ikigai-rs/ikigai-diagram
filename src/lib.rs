@@ -10,14 +10,40 @@
 //! ```text
 //! source urn:diagram:kernel                          the caller's own arrangement
 //! source urn:diagram:arrangement of=urn:file:game.ttl  a declared space, as a file
+//! source urn:diagram:state                           the caller's arrangement, with governor state
 //! ```
 //!
-//! ## Two names, one function
+//! ## Two names, one function — and two more with a state layer
 //!
 //! | name | what it is |
 //! |---|---|
 //! | [`urn:diagram:arrangement`](ARRANGEMENT) `of=<iri>` | the picture of whatever arrangement `of` names — a declaration read from a file, a peer's topology, a corridor's |
 //! | [`urn:diagram:kernel`](KERNEL) | the picture of `urn:kernel:topology`: the arrangement the CALLER sees, since topology is per request |
+//! | [`urn:diagram:state`](STATE) | `urn:diagram:kernel`'s picture with the governor state the caller may read drawn over it |
+//! | [`urn:diagram:state:arrangement`](STATE_ARRANGEMENT) `of=<iri>` | `urn:diagram:arrangement`'s picture with the same state layer |
+//!
+//! ## The state layer
+//!
+//! The two state names compose the arrangement with `urn:throttle:state` (ikigai-throttle's
+//! state face: a board of the governors the caller may read), join them on `thr:governs`
+//! (the IRI a governor names for its space is the IRI topology gives that node) and draw
+//! both with [`render_with_state`], a pure function. They are SEPARATE names on purpose:
+//! state is live, and joining it into `urn:diagram:kernel` would make that picture only as
+//! cacheable as the board (the field guide's cacheability trap). The plain pictures never
+//! read the board and are unchanged.
+//!
+//! - **The caller's authority shapes the picture.** The board is read under the caller's
+//!   capability and lists only the governors it may read; the picture draws only those. A
+//!   caller with no grant under `urn:cap:throttle:state:*` gets the plain picture byte for
+//!   byte, with no hint that governors exist (UX record D28): the board is not even asked.
+//! - **Cacheable exactly when the board is.** With the host's `StateBoard::attach` the
+//!   board is cacheable and hangs from each governor's thread, so the picture is cached
+//!   and redrawn on each state change; without it every read of the board is live, and so
+//!   is the picture. A caller with no grant reads no board, so its picture is as cacheable
+//!   as `urn:diagram:kernel`'s.
+//! - **Not color alone**: every state is a word (`OPEN`, `FULL`, `HALF-OPEN`, ...), and the
+//!   words below the picture, a `role="status"` region with `aria-live="polite"`, say
+//!   everything the layer shows.
 //!
 //! Both are the same composition: source a resource that is an arrangement's
 //! Turtle, parse it with core's [`Topology::from_turtle`], and draw it with
@@ -59,7 +85,10 @@
 //! sub-request, and an undeclared requirement would make the action manifold offer
 //! the picture to callers who cannot have it (declared = enforced).
 //! `urn:diagram:arrangement` declares nothing, because what it needs depends on
-//! `of` and is enforced by whatever `of` names.
+//! `of` and is enforced by whatever `of` names. `urn:diagram:state` declares what
+//! `urn:diagram:kernel` does and `urn:diagram:state:arrangement` what
+//! `urn:diagram:arrangement` does: neither needs the state grant (a caller without it
+//! gets the plain picture), so neither declares it.
 //!
 //! ## The picture
 //!
@@ -101,18 +130,25 @@
 
 pub mod palette;
 mod render;
+pub mod state;
 
-pub use render::{render, WIDTH};
+pub use render::{render, render_with_state, WIDTH};
 
 use ikigai_core::{
     space_iri, ArgRef, ArgSpec, AsyncFnEndpoint, Description, EndpointSpace, Error, Exact,
     Invocation, Iri, ReprType, Representation, Request, Result, Topology, Verb,
 };
 
+use state::{Board, BOARD, STATE_CAP_FAMILY};
+
 /// The picture of the arrangement `of` names.
 pub const ARRANGEMENT: &str = "urn:diagram:arrangement";
 /// The picture of the caller's own arrangement, `urn:kernel:topology`.
 pub const KERNEL: &str = "urn:diagram:kernel";
+/// [`KERNEL`]'s picture with the governor state the caller may read drawn over it.
+pub const STATE: &str = "urn:diagram:state";
+/// [`ARRANGEMENT`]'s picture (`of=<iri>`) with the governor state drawn over it.
+pub const STATE_ARRANGEMENT: &str = "urn:diagram:state:arrangement";
 /// The resource `urn:diagram:kernel` draws.
 pub const TOPOLOGY: &str = "urn:kernel:topology";
 /// The one media type this module serves.
@@ -128,15 +164,18 @@ const XSD_ANY_URI: &str = "http://www.w3.org/2001/XMLSchema#anyURI";
 /// The name [`space`] claims: `urn:iki:space:diagram`.
 pub const SPACE_ID: &str = "urn:iki:space:diagram";
 
-/// The module's endpoints: [`ARRANGEMENT`] and [`KERNEL`], named [`SPACE_ID`].
+/// The module's endpoints: [`ARRANGEMENT`], [`KERNEL`], [`STATE`] and
+/// [`STATE_ARRANGEMENT`], named [`SPACE_ID`].
 ///
 /// Configuration-free (no parameters, nothing read while building it), so it names
-/// itself: every call holds the same two doors. The name goes on LAST, because a
+/// itself: every call holds the same four doors. The name goes on LAST, because a
 /// later `bind` drops it (a space with other doors is a different space).
 pub fn space() -> EndpointSpace {
     EndpointSpace::new()
         .bind(Exact::new(ARRANGEMENT), arrangement())
         .bind(Exact::new(KERNEL), kernel())
+        .bind(Exact::new(STATE), state())
+        .bind(Exact::new(STATE_ARRANGEMENT), state_arrangement())
         .named(space_iri("diagram"))
 }
 
@@ -178,18 +217,7 @@ pub fn arrangement() -> AsyncFnEndpoint {
 /// caller's own request sees.
 pub fn kernel() -> AsyncFnEndpoint {
     AsyncFnEndpoint::new("diagram-kernel", |inv| {
-        Box::pin(async move {
-            let topology = Iri::parse(TOPOLOGY).expect("urn:kernel:topology is an IRI");
-            let turtle = inv.source(&topology).await?;
-            // The kernel's own rendering failing to parse is core's bug, not an answer
-            // about anything the caller named: an error, not a picture.
-            let text = std::str::from_utf8(&turtle.bytes)
-                .map_err(|_| Error::Endpoint(format!("{TOPOLOGY} is not UTF-8")))?;
-            let tree = Topology::from_turtle(text).map_err(|e| {
-                Error::Endpoint(format!("{TOPOLOGY} did not parse as an arrangement: {e}"))
-            })?;
-            Ok(svg(render(&tree)))
-        })
+        Box::pin(async move { Ok(svg(render(&kernel_tree(inv).await?))) })
     })
     .with_description(
         Description::new("diagram-kernel")
@@ -205,6 +233,122 @@ pub fn kernel() -> AsyncFnEndpoint {
             .requires(CAP_INSPECT)
             .output(SVG),
     )
+}
+
+/// `urn:diagram:state` — the picture of `urn:kernel:topology` with the governor state
+/// the caller may read drawn over it.
+pub fn state() -> AsyncFnEndpoint {
+    AsyncFnEndpoint::new("diagram-state", |inv| {
+        Box::pin(async move {
+            let tree = kernel_tree(inv).await?;
+            Ok(svg(render_with_state(&tree, &board(inv).await?)))
+        })
+    })
+    .with_description(
+        Description::new("diagram-state")
+            .title("Kernel arrangement diagram, with governor state")
+            .summary(
+                "The picture urn:diagram:kernel draws, with a state layer: what the governors on \
+                 urn:throttle:state hold (a circuit open or closed, a window's hits, a bulkhead's \
+                 running and parked work, a failover's last candidate), drawn in the box of the \
+                 space each one governs and stated in words in a live region. The board is read \
+                 under the caller's capability: a caller who may read no governor gets exactly \
+                 urn:diagram:kernel's picture. Cacheable when the board is.",
+            )
+            .verb(Verb::Source)
+            .verb(Verb::Meta)
+            .requires(CAP_INSPECT)
+            .output(SVG),
+    )
+}
+
+/// `urn:diagram:state:arrangement of=<iri>` — the picture of the arrangement `of`
+/// names with the governor state drawn over it.
+pub fn state_arrangement() -> AsyncFnEndpoint {
+    AsyncFnEndpoint::new("diagram-state-arrangement", |inv| {
+        Box::pin(async move {
+            let of = of(inv)?;
+            let (bytes, media) = source_turtle(inv, &of).await?;
+            let tree = match std::str::from_utf8(&bytes).map(Topology::from_turtle) {
+                Ok(Ok(tree)) => tree,
+                // Not an arrangement: the same picture saying why, and no state to draw.
+                _ => return Ok(picture(&of, &bytes, &media)),
+            };
+            Ok(svg(render_with_state(&tree, &board(inv).await?)))
+        })
+    })
+    .with_description(
+        Description::new("diagram-state-arrangement")
+            .title("Arrangement diagram, with governor state")
+            .summary(
+                "The picture urn:diagram:arrangement draws of `of`, with the state layer \
+                 urn:diagram:state draws: the governors on urn:throttle:state the caller may \
+                 read, joined to the arrangement's spaces on thr:governs. A caller who may read \
+                 no governor gets exactly urn:diagram:arrangement's picture.",
+            )
+            .verb(Verb::Source)
+            .verb(Verb::Meta)
+            .input(
+                ArgSpec::new("of")
+                    .summary(
+                        "the IRI of a resource whose representation is an arrangement's Turtle; \
+                         the one required input, so a positional value lands here",
+                    )
+                    .class(XSD_ANY_URI),
+            )
+            .output(SVG),
+    )
+}
+
+/// The caller's own arrangement, parsed. The kernel's own rendering failing to parse is
+/// core's bug, not an answer about anything the caller named: an error, not a picture.
+async fn kernel_tree(inv: &Invocation<'_>) -> Result<Topology> {
+    let topology = Iri::parse(TOPOLOGY).expect("urn:kernel:topology is an IRI");
+    let turtle = inv.source(&topology).await?;
+    let text = std::str::from_utf8(&turtle.bytes)
+        .map_err(|_| Error::Endpoint(format!("{TOPOLOGY} is not UTF-8")))?;
+    Topology::from_turtle(text)
+        .map_err(|e| Error::Endpoint(format!("{TOPOLOGY} did not parse as an arrangement: {e}")))
+}
+
+/// The governor state this caller may read, or an empty board.
+///
+/// ★ **A caller who may read no governor gets no sign that governors exist** (UX record
+/// D28, ledger #2176). Three ways to be that caller, and each gives an EMPTY board, which
+/// draws the plain picture byte for byte:
+///
+/// - **No grant under [`STATE_CAP_FAMILY`].** The board's floor would refuse it, so the
+///   board is not asked at all ([`Capability::satisfies`](ikigai_core::Capability::satisfies)
+///   is the kernel's own pre-flight predicate). No refusal is issued, logged or traced, and
+///   the picture depends on the topology alone, so it stays cacheable: a refusal never is.
+/// - **No board** (nothing answers `urn:throttle:state`: `Unresolved` or `NotFound`). Its
+///   absence hangs from the bindings thread the topology already hangs from, so mounting
+///   one redraws the picture.
+/// - **Denied anyway** (a grant the floor admits and the board's own rule does not).
+///
+/// Any other failure to read the board, and a board that is not one, is an error: it is
+/// not an answer about anything, the same rule `of` follows.
+///
+/// The board is read under the caller's capability, never more, and lists only the
+/// governors that capability may read; the picture draws only those.
+async fn board(inv: &Invocation<'_>) -> Result<Board> {
+    if !inv.capability.satisfies(STATE_CAP_FAMILY) {
+        return Ok(Board::empty());
+    }
+    let board = Iri::parse(BOARD).expect("urn:throttle:state is an IRI");
+    let request = Request::new(Verb::Source, board)
+        .with_arg("as", ArgRef::Inline(TURTLE.as_bytes().to_vec()));
+    let repr = match inv.issue(request).await {
+        Ok(repr) => repr,
+        Err(Error::Denied(_) | Error::NotFound(_) | Error::Unresolved(_)) => {
+            return Ok(Board::empty())
+        }
+        Err(e) => return Err(e),
+    };
+    let text = std::str::from_utf8(&repr.bytes)
+        .map_err(|_| Error::Endpoint(format!("{BOARD} is not UTF-8")))?;
+    Board::from_turtle(text)
+        .map_err(|e| Error::Endpoint(format!("{BOARD} did not parse as a state board: {e}")))
 }
 
 /// The picture as a representation: SVG, cacheable (a pure function of what was

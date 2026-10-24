@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:lang="en" lang="en" width="960" height="1136" viewBox="0 0 960 1136" role="group" aria-labelledby="ikds-1504db42a6d35012-title" class="ikd">
+<title id="ikds-1504db42a6d35012-title">Resolution arrangement: urn:ikigai:chain:root, with governor state</title>
+<desc id="ikds-1504db42a6d35012-desc">The resolution chain one request sees: the root alone. In all: 1 fallback, 1 mount, 1 opaque space; and 9 doors across 5 endpoint spaces. Named spaces, in the order drawn: urn:iki:space:demo-limit, urn:iki:space:demo-breaker, urn:iki:space:demo-pool, urn:iki:space:demo-backup. Over it, the state of 4 governors, drawn in the box of each space governed and stated in words below the picture.</desc>
+<style>.ikd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:13px}.ikd-b{font-weight:700}.ikd-hole{stroke-dasharray:6 4}.ikd-dim{stroke-dasharray:2 3}.ikd-bg{fill:#ffffff}.ikd-box{fill:#ffffff}.ikd-x{fill:#1f2328}.ikd-m{fill:#59636e}.ikd-k-chain{stroke:#59636e}.ikd-t-chain{fill:#f6f8fa}.ikd-k-fallback{stroke:#0969da}.ikd-t-fallback{fill:#ddf4ff}.ikd-k-mount{stroke:#1a7f37}.ikd-t-mount{fill:#dafbe1}.ikd-k-dynamic{stroke:#1a7f37}.ikd-t-dynamic{fill:#dafbe1}.ikd-k-alias{stroke:#8250df}.ikd-t-alias{fill:#fbefff}.ikd-k-limit{stroke:#cf222e}.ikd-t-limit{fill:#ffebe9}.ikd-k-level{stroke:#9a6700}.ikd-t-level{fill:#fff8c5}.ikd-k-endpoints{stroke:#1b7c83}.ikd-t-endpoints{fill:#dff7f5}.ikd-k-opaque{stroke:#818b98}.ikd-t-opaque{fill:#f6f8fa}.ikd-k-rewrite{stroke:#bc4c00}.ikd-t-rewrite{fill:#fff1e5}.ikd-k-confine{stroke:#953800}.ikd-t-confine{fill:#fff1e5}.ikd-k-unknown{stroke:#59636e}.ikd-t-unknown{fill:#f6f8fa}.ikd-k-problem{stroke:#cf222e}.ikd-t-problem{fill:#ffebe9}.ikd-mk-exact{fill:#59636e}.ikd-mk-template{fill:#0969da}.ikd-mk-prefix{fill:#1a7f37}.ikd-mk-custom{fill:#cf222e}@media (prefers-color-scheme:dark){.ikd-bg{fill:#0d1117}.ikd-box{fill:#0d1117}.ikd-x{fill:#e6edf3}.ikd-m{fill:#9198a1}.ikd-k-chain{stroke:#9198a1}.ikd-t-chain{fill:#161b22}.ikd-k-fallback{stroke:#4493f8}.ikd-t-fallback{fill:#0c1f3a}.ikd-k-mount{stroke:#3fb950}.ikd-t-mount{fill:#0d2416}.ikd-k-dynamic{stroke:#3fb950}.ikd-t-dynamic{fill:#0d2416}.ikd-k-alias{stroke:#ab7df8}.ikd-t-alias{fill:#1d1533}.ikd-k-limit{stroke:#f85149}.ikd-t-limit{fill:#2a1214}.ikd-k-level{stroke:#d29922}.ikd-t-level{fill:#261e0c}.ikd-k-endpoints{stroke:#39c5cf}.ikd-t-endpoints{fill:#0b2326}.ikd-k-opaque{stroke:#768390}.ikd-t-opaque{fill:#161b22}.ikd-k-rewrite{stroke:#db6d28}.ikd-t-rewrite{fill:#28190d}.ikd-k-confine{stroke:#f0883e}.ikd-t-confine{fill:#28190d}.ikd-k-unknown{stroke:#9198a1}.ikd-t-unknown{fill:#161b22}.ikd-k-problem{stroke:#f85149}.ikd-t-problem{fill:#2a1214}.ikd-mk-exact{fill:#9198a1}.ikd-mk-template{fill:#4493f8}.ikd-mk-prefix{fill:#3fb950}.ikd-mk-custom{fill:#f85149}}.ikd-k-state{stroke:#bf3989}.ikd-t-state{fill:#ffeff7}.ikd-st-go{fill:#1a7f37}.ikd-st-wait{fill:#7d4e00}.ikd-st-stop{fill:#cf222e}.ikd-st-unknown{fill:#59636e}@media (prefers-color-scheme:dark){.ikd-k-state{stroke:#db61a2}.ikd-t-state{fill:#2d1524}.ikd-st-go{fill:#3fb950}.ikd-st-wait{fill:#d29922}.ikd-st-stop{fill:#f85149}.ikd-st-unknown{fill:#9198a1}}</style>
+<rect class="ikd-bg" width="960" height="1136"/>
+<g role="img" aria-labelledby="ikds-1504db42a6d35012-title ikds-1504db42a6d35012-desc">
+<g>
+<rect class="ikd-box" x="16" y="16" width="928" height="864" rx="4"/>
+<rect class="ikd-t-chain" x="17" y="17" width="926" height="46" rx="3"/>
+<text x="24" y="34"><tspan class="ikd-x ikd-b">Chain</tspan><tspan class="ikd-x">  the caller&#39;s view: corridors innermost first, then the root</tspan></text>
+<text x="24" y="54"><tspan class="ikd-m">urn:ikigai:chain:root</tspan></text>
+<g>
+<rect class="ikd-box" x="32" y="72" width="904" height="800" rx="4"/>
+<rect class="ikd-t-fallback" x="33" y="73" width="902" height="26" rx="3"/>
+<text x="40" y="90"><tspan class="ikd-m">root · </tspan><tspan class="ikd-x ikd-b">Fallback</tspan><tspan class="ikd-x">  6 layers consulted in order; the first hit wins</tspan></text>
+<g>
+<rect class="ikd-box" x="48" y="108" width="880" height="76" rx="4"/>
+<rect class="ikd-t-endpoints" x="49" y="109" width="878" height="26" rx="3"/>
+<text x="56" y="126"><tspan class="ikd-m">layer 1 · </tspan><tspan class="ikd-x ikd-b">Endpoints</tspan><tspan class="ikd-x">  2 doors tried in order; the first match wins</tspan></text>
+<g><title>door 1: urn:throttle:state (exact) is answered by throttle-state</title>
+<text x="56" y="154"><tspan class="ikd-m">1</tspan></text>
+<text x="72" y="154"><tspan class="ikd-x">urn:throttle:state</tspan></text>
+<text x="296" y="154"><tspan class="ikd-m">→</tspan></text>
+<text x="312" y="154"><tspan class="ikd-x ikd-b">throttle-state</tspan></text>
+<text x="488" y="154"><tspan class="ikd-mk-exact">exact</tspan></text>
+</g>
+<g><title>door 2: urn:throttle:state:{member} (template) is answered by throttle-state-member</title>
+<text x="56" y="174"><tspan class="ikd-m">2</tspan></text>
+<text x="72" y="174"><tspan class="ikd-x">urn:throttle:state:{member}</tspan></text>
+<text x="296" y="174"><tspan class="ikd-m">→</tspan></text>
+<text x="312" y="174"><tspan class="ikd-x ikd-b">throttle-state-member</tspan></text>
+<text x="488" y="174"><tspan class="ikd-mk-template">template</tspan></text>
+</g>
+<rect class="ikd-k-endpoints" x="48" y="108" width="880" height="76" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<g>
+<rect class="ikd-box" x="48" y="192" width="880" height="140" rx="4"/>
+<rect class="ikd-t-endpoints" x="49" y="193" width="878" height="46" rx="3"/>
+<text x="56" y="210"><tspan class="ikd-m">layer 2 · </tspan><tspan class="ikd-x ikd-b">Endpoints</tspan><tspan class="ikd-x">  2 doors tried in order; the first match wins</tspan></text>
+<text x="56" y="230"><tspan class="ikd-m">urn:iki:space:demo-limit</tspan></text>
+<rect class="ikd-t-state" x="52" y="244" width="872" height="20" rx="2"/>
+<text x="56" y="258"><tspan class="ikd-m">governed by </tspan><tspan class="ikd-x ikd-b">rate limit</tspan><tspan class="ikd-x"> limit</tspan></text>
+<text x="72" y="278"><tspan class="ikd-st-go ikd-b">ADMITTING</tspan><tspan class="ikd-m"> window </tspan><tspan class="ikd-x">urn:demo:limit:</tspan><tspan class="ikd-m"> · </tspan><tspan class="ikd-x">2 of 3 per 10s</tspan></text>
+<g><title>door 1: urn:demo:limit:ok (exact) is answered by ok</title>
+<text x="56" y="302"><tspan class="ikd-m">1</tspan></text>
+<text x="72" y="302"><tspan class="ikd-x">urn:demo:limit:ok</tspan></text>
+<text x="232" y="302"><tspan class="ikd-m">→</tspan></text>
+<text x="248" y="302"><tspan class="ikd-x ikd-b">ok</tspan></text>
+<text x="288" y="302"><tspan class="ikd-mk-exact">exact</tspan></text>
+</g>
+<g><title>door 2: urn:demo:limit:down (exact) is answered by down</title>
+<text x="56" y="322"><tspan class="ikd-m">2</tspan></text>
+<text x="72" y="322"><tspan class="ikd-x">urn:demo:limit:down</tspan></text>
+<text x="232" y="322"><tspan class="ikd-m">→</tspan></text>
+<text x="248" y="322"><tspan class="ikd-x ikd-b">down</tspan></text>
+<text x="288" y="322"><tspan class="ikd-mk-exact">exact</tspan></text>
+</g>
+<rect class="ikd-k-endpoints" x="48" y="192" width="880" height="140" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<g>
+<rect class="ikd-box" x="48" y="340" width="880" height="140" rx="4"/>
+<rect class="ikd-t-endpoints" x="49" y="341" width="878" height="46" rx="3"/>
+<text x="56" y="358"><tspan class="ikd-m">layer 3 · </tspan><tspan class="ikd-x ikd-b">Endpoints</tspan><tspan class="ikd-x">  2 doors tried in order; the first match wins</tspan></text>
+<text x="56" y="378"><tspan class="ikd-m">urn:iki:space:demo-breaker</tspan></text>
+<rect class="ikd-t-state" x="52" y="392" width="872" height="20" rx="2"/>
+<text x="56" y="406"><tspan class="ikd-m">governed by </tspan><tspan class="ikd-x ikd-b">circuit breaker</tspan><tspan class="ikd-x"> breaker</tspan><tspan class="ikd-m"> · trips after 2, cooldown 30s</tspan></text>
+<text x="72" y="426"><tspan class="ikd-st-stop ikd-b">OPEN</tspan><tspan class="ikd-m"> circuit </tspan><tspan class="ikd-x">urn:demo:breaker:down</tspan><tspan class="ikd-m"> · </tspan><tspan class="ikd-x">2 consecutive transient failures</tspan></text>
+<g><title>door 1: urn:demo:breaker:ok (exact) is answered by ok</title>
+<text x="56" y="450"><tspan class="ikd-m">1</tspan></text>
+<text x="72" y="450"><tspan class="ikd-x">urn:demo:breaker:ok</tspan></text>
+<text x="248" y="450"><tspan class="ikd-m">→</tspan></text>
+<text x="264" y="450"><tspan class="ikd-x ikd-b">ok</tspan></text>
+<text x="304" y="450"><tspan class="ikd-mk-exact">exact</tspan></text>
+</g>
+<g><title>door 2: urn:demo:breaker:down (exact) is answered by down</title>
+<text x="56" y="470"><tspan class="ikd-m">2</tspan></text>
+<text x="72" y="470"><tspan class="ikd-x">urn:demo:breaker:down</tspan></text>
+<text x="248" y="470"><tspan class="ikd-m">→</tspan></text>
+<text x="264" y="470"><tspan class="ikd-x ikd-b">down</tspan></text>
+<text x="304" y="470"><tspan class="ikd-mk-exact">exact</tspan></text>
+</g>
+<rect class="ikd-k-endpoints" x="48" y="340" width="880" height="140" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<g>
+<rect class="ikd-box" x="48" y="488" width="880" height="140" rx="4"/>
+<rect class="ikd-t-endpoints" x="49" y="489" width="878" height="46" rx="3"/>
+<text x="56" y="506"><tspan class="ikd-m">layer 4 · </tspan><tspan class="ikd-x ikd-b">Endpoints</tspan><tspan class="ikd-x">  2 doors tried in order; the first match wins</tspan></text>
+<text x="56" y="526"><tspan class="ikd-m">urn:iki:space:demo-pool</tspan></text>
+<rect class="ikd-t-state" x="52" y="540" width="872" height="20" rx="2"/>
+<text x="56" y="554"><tspan class="ikd-m">governed by </tspan><tspan class="ikd-x ikd-b">throttle</tspan><tspan class="ikd-x"> pool</tspan></text>
+<text x="72" y="574"><tspan class="ikd-st-go ikd-b">ADMITTING</tspan><tspan class="ikd-m"> bulkhead </tspan><tspan class="ikd-x">urn:demo:pool:</tspan><tspan class="ikd-m"> · </tspan><tspan class="ikd-x">0 of 2 running, 0 parked</tspan></text>
+<g><title>door 1: urn:demo:pool:ok (exact) is answered by ok</title>
+<text x="56" y="598"><tspan class="ikd-m">1</tspan></text>
+<text x="72" y="598"><tspan class="ikd-x">urn:demo:pool:ok</tspan></text>
+<text x="224" y="598"><tspan class="ikd-m">→</tspan></text>
+<text x="240" y="598"><tspan class="ikd-x ikd-b">ok</tspan></text>
+<text x="280" y="598"><tspan class="ikd-mk-exact">exact</tspan></text>
+</g>
+<g><title>door 2: urn:demo:pool:down (exact) is answered by down</title>
+<text x="56" y="618"><tspan class="ikd-m">2</tspan></text>
+<text x="72" y="618"><tspan class="ikd-x">urn:demo:pool:down</tspan></text>
+<text x="224" y="618"><tspan class="ikd-m">→</tspan></text>
+<text x="240" y="618"><tspan class="ikd-x ikd-b">down</tspan></text>
+<text x="280" y="618"><tspan class="ikd-mk-exact">exact</tspan></text>
+</g>
+<rect class="ikd-k-endpoints" x="48" y="488" width="880" height="140" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<g>
+<rect class="ikd-box" x="48" y="636" width="880" height="56" rx="4"/>
+<rect class="ikd-t-opaque" x="49" y="637" width="878" height="26" rx="3"/>
+<text x="56" y="654"><tspan class="ikd-m">layer 5 · </tspan><tspan class="ikd-x ikd-b">Opaque</tspan></text>
+<text x="56" y="682"><tspan class="ikd-m">reports no structure: what the graph knows stops here</tspan></text>
+<rect class="ikd-k-opaque ikd-dim" x="48" y="636" width="880" height="56" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<g>
+<rect class="ikd-box" x="48" y="700" width="880" height="164" rx="4"/>
+<rect class="ikd-t-mount" x="49" y="701" width="878" height="26" rx="3"/>
+<text x="56" y="718"><tspan class="ikd-m">layer 6 · </tspan><tspan class="ikd-x ikd-b">Mount</tspan><tspan class="ikd-x">  urn:standby:</tspan></text>
+<g>
+<rect class="ikd-box" x="64" y="736" width="856" height="120" rx="4"/>
+<rect class="ikd-t-endpoints" x="65" y="737" width="854" height="46" rx="3"/>
+<text x="72" y="754"><tspan class="ikd-x ikd-b">Endpoints</tspan><tspan class="ikd-x">  1 door tried in order; the first match wins</tspan></text>
+<text x="72" y="774"><tspan class="ikd-m">urn:iki:space:demo-backup</tspan></text>
+<rect class="ikd-t-state" x="68" y="788" width="848" height="20" rx="2"/>
+<text x="72" y="802"><tspan class="ikd-m">candidate </tspan><tspan class="ikd-x ikd-b">1</tspan><tspan class="ikd-m"> of failover </tspan><tspan class="ikd-x">dr</tspan></text>
+<text x="88" y="822"><tspan class="ikd-st-go ikd-b">ANSWERED</tspan><tspan class="ikd-m"> route </tspan><tspan class="ikd-x">urn:demo:dr:x</tspan><tspan class="ikd-m"> · its last call ended here</tspan></text>
+<g><title>door 1: urn:demo:dr:x (exact) is answered by backup</title>
+<text x="72" y="846"><tspan class="ikd-m">1</tspan></text>
+<text x="88" y="846"><tspan class="ikd-x">urn:demo:dr:x</tspan></text>
+<text x="200" y="846"><tspan class="ikd-m">→</tspan></text>
+<text x="216" y="846"><tspan class="ikd-x ikd-b">backup</tspan></text>
+<text x="272" y="846"><tspan class="ikd-mk-exact">exact</tspan></text>
+</g>
+<rect class="ikd-k-endpoints" x="64" y="736" width="856" height="120" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<rect class="ikd-k-mount" x="48" y="700" width="880" height="164" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<rect class="ikd-k-fallback" x="32" y="72" width="904" height="800" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+<rect class="ikd-k-chain" x="16" y="16" width="928" height="864" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+</g>
+<g id="ikds-1504db42a6d35012-status" role="status" aria-live="polite" aria-atomic="true">
+<g>
+<rect class="ikd-box" x="16" y="888" width="928" height="232" rx="4"/>
+<rect class="ikd-t-state" x="17" y="889" width="926" height="26" rx="3"/>
+<text x="24" y="906"><tspan class="ikd-x ikd-b">Governor state</tspan><tspan class="ikd-x">  4 governors</tspan></text>
+<text x="24" y="934"><tspan class="ikd-x ikd-b">breaker, a circuit breaker, governs urn:iki:space:demo-breaker (drawn above); trips after 2, cooldown 30s.</tspan></text>
+<text x="40" y="954"><tspan class="ikd-x">Circuit urn:demo:breaker:down: open, 2 consecutive transient failures.</tspan></text>
+<text x="24" y="978"><tspan class="ikd-x ikd-b">dr, a failover over 2 candidates: candidate 0 governs urn:iki:space:demo-primary (not in this arrangement);</tspan></text>
+<text x="24" y="998"><tspan class="ikd-x ikd-b">candidate 1 governs urn:iki:space:demo-backup (drawn above).</tspan></text>
+<text x="40" y="1018"><tspan class="ikd-x">Route urn:demo:dr:x: answered, last call ended at candidate 1.</tspan></text>
+<text x="24" y="1042"><tspan class="ikd-x ikd-b">limit, a rate limit, governs urn:iki:space:demo-limit (drawn above).</tspan></text>
+<text x="40" y="1062"><tspan class="ikd-x">Window urn:demo:limit:: admitting, 2 of 3 per 10s.</tspan></text>
+<text x="24" y="1086"><tspan class="ikd-x ikd-b">pool, a throttle, governs urn:iki:space:demo-pool (drawn above).</tspan></text>
+<text x="40" y="1106"><tspan class="ikd-x">Bulkhead urn:demo:pool:: admitting, 0 of 2 running, 0 parked.</tspan></text>
+<rect class="ikd-k-state" x="16" y="888" width="928" height="232" rx="4" fill="none" stroke-width="1.5"/>
+</g>
+</g>
+</svg>

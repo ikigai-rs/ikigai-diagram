@@ -3,17 +3,20 @@
 //!
 //! Declarations, and why:
 //!
-//! - **`cacheable`, both** — a picture is a pure function of what was sourced, so
-//!   both endpoints mark it `.cacheable()`; holding the suite to it turns a future
+//! - **`cacheable`, all four** — a picture is a pure function of what was sourced, so
+//!   every endpoint marks it `.cacheable()`; holding the suite to it turns a future
 //!   dependency that silently downgraded the effective expiry into a red test.
 //! - **not `pure`, either** — each one READS a resource through the kernel, and
 //!   its result rightly carries that resource's threads (`urn:kernel:bindings` for
 //!   the kernel's topology, the declaration's own thread for `of`). Declaring them
 //!   pure would be the lie the suite exists to catch.
 //! - **`space()` is self-named** — it takes no parameters and reads nothing while
-//!   it is built, so every call holds the same two doors and it claims
+//!   it is built, so every call holds the same four doors and it claims
 //!   `urn:iki:space:diagram`; the suite calls it twice and holds it to that.
-//! - **a fixture for `of`** — the suite's minimal `xsd:anyURI` names nothing the
+//!   The two state pictures are cacheable here because this kernel mounts no board:
+//!   with a LIVE board they are live, which is the board's expiry propagating, not a
+//!   declaration (`tests/state.rs` holds both cases).
+//! - **a fixture for `of`** (both `of` endpoints) — the suite's minimal `xsd:anyURI` names nothing the
 //!   kernel binds, so the invoking checks would see only an unresolved sub-request.
 //!   The fixture names a real arrangement served by a fixture endpoint.
 //!
@@ -34,7 +37,12 @@ use ikigai_core::{
 };
 
 /// Every endpoint `space()` binds, by description id.
-const ENDPOINTS: [&str; 2] = ["diagram-arrangement", "diagram-kernel"];
+const ENDPOINTS: [&str; 4] = [
+    "diagram-arrangement",
+    "diagram-kernel",
+    "diagram-state",
+    "diagram-state-arrangement",
+];
 /// The arrangement the fixture serves, and its description id.
 const FIXTURE_IRI: &str = "urn:fixture:tic-tac-toe";
 const FIXTURE_ID: &str = "fixture-arrangement";
@@ -69,8 +77,11 @@ fn conforms() {
     let suite = Suite::new()
         .cacheable("diagram-arrangement")
         .cacheable("diagram-kernel")
+        .cacheable("diagram-state")
+        .cacheable("diagram-state-arrangement")
         .pure(FIXTURE_ID)
         .fixture(Fixture::new("diagram-arrangement", Verb::Source).arg("of", FIXTURE_IRI))
+        .fixture(Fixture::new("diagram-state-arrangement", Verb::Source).arg("of", FIXTURE_IRI))
         .self_named_space("diagram", ikigai_diagram::space);
 
     let report = suite.run_blocking(&kernel);

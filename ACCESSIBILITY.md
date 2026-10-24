@@ -10,12 +10,14 @@ is not, and how to report a barrier. It is not a conformance claim. Adapted from
 | Status | Evaluation in progress. No conformance claim. |
 | Owner | the maintainers of this repository |
 | Report a barrier | [a GitHub issue](https://github.com/ikigai-rs/ikigai-diagram/issues/new) with the `accessibility` label; anything security-sensitive through [private vulnerability reporting](https://github.com/ikigai-rs/ikigai-diagram/security/advisories/new) |
-| Last reviewed | 2026-10-15 |
+| Last reviewed | 2026-10-24 |
 
 ## What it emits that people read
 
 One thing: an SVG picture of a kernel's arrangement, from `render` (`src/render.rs`) and the two
-endpoints that answer it, `urn:diagram:kernel` and `urn:diagram:arrangement`. A host decides how
+endpoints that answer it, `urn:diagram:kernel` and `urn:diagram:arrangement`; and the same picture
+with a state layer (governor state drawn over it, and stated in words below it), from
+`render_with_state` and `urn:diagram:state` / `urn:diagram:state:arrangement`. A host decides how
 the picture reaches a person (ikigai-cli's `show` opens it as a file; the ikigai Book embeds one
 as an `<img>` with its own `alt` text), and the host's page is the host's.
 
@@ -39,6 +41,15 @@ as an `<img>` with its own `alt` text), and the host's page is the host's.
   draws (kinds, match kinds, the `<desc>`) are English; names and patterns from the arrangement
   are drawn as they are.
 - **Nothing overlaps or overruns.** Text too long for its column ends in an ellipsis.
+- **The state layer, in words and live.** A picture with a state layer is a `role="group"` named
+  by its `<title>`. The arrangement inside it is the `role="img"` above; the state is ALSO a
+  `role="status"` region with `aria-live="polite"` and `aria-atomic="true"`, drawn as real text
+  below the picture, that states every governor, what it governs, whether the picture shows that
+  space, and every key's state and numbers: everything the layer draws. The region's id is derived
+  from the arrangement alone, so a redraw of the same arrangement with new state keeps it.
+- **State is never color alone.** Every state is a word (`OPEN`, `HALF-OPEN`, `CLOSED`, `FULL`,
+  `ADMITTING`, `ANSWERED`, `FAILED`), placed first on its row so truncation never removes it; its
+  color (go, wait, stop) repeats the word.
 
 ## How it is tested
 
@@ -48,6 +59,13 @@ as an `<img>` with its own `alt` text), and the host's page is the host's.
 - The unit tests in `src/render.rs` check that no two lines of text overlap and every line stays
   inside its box and the 960-pixel width, on a host-sized arrangement (138 doors), every kind of
   space, and a tree nested 60 deep; and that truncation, wrapping and escaping work.
+- `tests/contrast.rs` measures the state layer's pairs too (text and muted text on a governor's
+  band, the summary's outline, every state mark), in both schemes, and checks the state tokens'
+  dark scheme sits behind the media query. `tests/state.rs` checks that every state value is drawn
+  as a word, that the words in the live region state what the layer draws, that hostile text is
+  escaped, that an empty board (a caller with no grant) draws the plain picture byte for byte, and
+  holds two state pictures as golden files; a unit test in `src/render.rs` checks the state layer
+  for overlap and overrun.
 - `tests/contrast.rs` also checks that every color in the golden pictures is a token, that
   no inline `style` is used and that `fill` and `stroke` attributes hold only keywords, so no
   color pair outside the tables is drawn. `tests/space_name.rs` checks the language.
@@ -56,7 +74,9 @@ as an `<img>` with its own `alt` text), and the host's page is the host's.
   shows up as a diff. All ran and passed on main at `43d3e67` on 2026-10-15 (31 tests and one
   doctest; one test that only prints a picture is ignored). CI runs them on every pull request.
 - **No screen reader, magnifier or other assistive technology has been used on any picture**, and
-  no accessibility checker (axe or similar) or browser has been run against one.
+  no accessibility checker (axe or similar) has been run against one. One state picture
+  (`tests/golden/state-every-state.svg`) was looked at in a browser in the light scheme only, on
+  2026-10-24; the live region's announcements were not heard by anyone.
 
 ## Known limitations
 
@@ -69,6 +89,12 @@ assistive technology:
   holds all of it as text.
 - A truncated line's full text is only in a hover tooltip (`<title>`), which a keyboard or touch
   user cannot open and a screen reader does not reach inside `role="img"`.
+- **The live region announces only if the host keeps it.** A host that swaps the whole `<svg>`
+  on a redraw replaces the region, and screen readers announce a NEW live region unreliably or not
+  at all. A host that wants announcements keeps one region of its own and copies the summary's
+  text into it, or morphs the SVG in place so the region (same id) persists. This is not tested.
+- An `<img>` of a state picture exposes only its host-given `alt`: the live region and the words
+  inside reach a screen reader only when the SVG is inline.
 - The picture is a fixed 960 pixels wide with 13-pixel text. Scaled down to fit a narrow screen,
   its text shrinks with it; at its own size it scrolls sideways.
 
@@ -80,6 +106,7 @@ assistive technology:
 | 2026-10-10 | The `<desc>` states the names the spaces claim ([PR 2](https://github.com/ikigai-rs/ikigai-diagram/pull/2)). |
 | 2026-10-17 | The picture states its language; a test that no color is drawn outside the tokens. |
 | 2026-10-15 | This file ([PR 6](https://github.com/ikigai-rs/ikigai-diagram/pull/6)). |
+| 2026-10-24 | The state layer: governor state drawn over the arrangement as words, and a live region of text (ledger #2173). |
 
 ## Contributing
 

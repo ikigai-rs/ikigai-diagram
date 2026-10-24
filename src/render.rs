@@ -7,12 +7,13 @@
 //! The layout is integer arithmetic over a fixed monospace advance, so the same
 //! tree is the same bytes on every machine.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
 use ikigai_core::{Door, SpaceKind, Topology, TopologyRule};
 
 use crate::palette::{self, Kind};
+use crate::state::{span, Board, Governor, GovernorKind, KeyState, Mode, Tone};
 
 /// The picture's width: the bound the layout fits every box and every line into.
 pub const WIDTH: u32 = 960;
@@ -73,12 +74,68 @@ pub fn render(topology: &Topology) -> String {
     Layout::of(topology).svg()
 }
 
+/// Render an arrangement with a STATE LAYER: what the governors on `board` hold,
+/// drawn over the spaces they govern, and the same in words below the picture.
+///
+/// The join is `thr:governs`: a governor's governed space is the node whose IRI it
+/// names, so its state is drawn in that node's box, under the header band. A
+/// failover is opaque in topology and governs nothing itself; each of its candidates
+/// governs a space and is drawn there when the arrangement shows it. A governor whose
+/// space the arrangement does not show is still stated in the words.
+///
+/// Every state is a WORD (`OPEN`, `FULL`, `HALF-OPEN`, ...) placed first on its row,
+/// so a long target cut with an ellipsis never cuts the state; the color repeats the
+/// word. The words below the picture are a `role="status"` region with
+/// `aria-live="polite"`, and say everything the layer shows.
+///
+/// **An empty board draws the plain arrangement**, byte for byte what [`render`]
+/// draws: a caller the board shows no governor gets no sign that governors exist.
+///
+/// Pure and deterministic, like [`render`]: the state is an input, never fetched.
+///
+/// ```
+/// use ikigai_core::{Door, MatchKind, SpaceKind, Topology};
+/// use ikigai_diagram::state::Board;
+///
+/// let space = Topology::new(SpaceKind::EndpointSpace {
+///     doors: vec![Door::new("urn:demo:down", MatchKind::Exact, "down")],
+/// })
+/// .with_id(Some(ikigai_core::space_iri("demo")));
+/// let board = Board::from_turtle(&[
+///     "@prefix thr: <https://ikigai-rs.dev/ns/throttle#> .",
+///     "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .",
+///     "<urn:throttle:state> a thr:StateBoard ; thr:governor <urn:throttle:state:b> .",
+///     "<urn:throttle:state:b> a thr:CircuitBreaker ; thr:name \"b\" ;",
+///     "    thr:governs <urn:iki:space:demo> ; thr:key <urn:throttle:state:b:key:urn:demo:down> .",
+///     "<urn:throttle:state:b:key:urn:demo:down> a thr:Circuit ; thr:target <urn:demo:down> ;",
+///     "    thr:failures \"2\"^^xsd:nonNegativeInteger ; thr:state thr:Open .",
+/// ].join("\n")).unwrap();
+///
+/// let svg = ikigai_diagram::render_with_state(&space, &board);
+/// assert!(svg.contains(">OPEN</tspan>")); // the state is a word on the governed box
+/// assert!(svg.contains("role=\"status\" aria-live=\"polite\""));
+/// assert!(svg.contains("Circuit urn:demo:down: open, 2 consecutive transient failures."));
+///
+/// // No governors on the board: the plain picture, with no hint of the layer.
+/// assert_eq!(ikigai_diagram::render_with_state(&space, &Board::empty()), ikigai_diagram::render(&space));
+/// ```
+pub fn render_with_state(topology: &Topology, board: &Board) -> String {
+    if board.is_empty() {
+        return render(topology);
+    }
+    Layout::with_state(topology, board).svg()
+}
+
 /// A laid-out picture: the body, its height, and what the prose summary needs.
 pub(crate) struct Layout {
     body: String,
     height: u32,
     title: String,
     desc: String,
+    /// The state layer's words, when the picture has one: the summary box's SVG, and
+    /// the id the picture's ids derive from (the PLAIN arrangement's, so a redraw of the
+    /// same arrangement with new state keeps the status region's id).
+    status: Option<Status>,
     /// Every line of text placed, for the legibility tests. Recorded in every build,
     /// not only under `cfg(test)`, so the layout the tests check is the one that
     /// ships; only the tests read it, hence the allow outside them.
@@ -97,6 +154,12 @@ pub(crate) struct Placed {
     pub(crate) limit: u32,
 }
 
+/// The state layer's summary, laid out: its box and its ids' seed.
+pub(crate) struct Status {
+    svg: String,
+    id: String,
+}
+
 impl Layout {
     pub(crate) fn of(topology: &Topology) -> Layout {
         let mut canvas = Canvas::default();
@@ -107,11 +170,45 @@ impl Layout {
             height,
             title: title(topology),
             desc: canvas.counts.describe(topology),
+            status: None,
+            texts: canvas.texts,
+        }
+    }
+
+    /// The arrangement with the board's state drawn over it, and the summary below.
+    pub(crate) fn with_state(topology: &Topology, board: &Board) -> Layout {
+        let plain = Layout::of(topology);
+        let mut canvas = Canvas {
+            overlay: Overlay::of(board),
+            ..Canvas::default()
+        };
+        let w = WIDTH - 2 * MARGIN;
+        let frag = canvas.node(topology, MARGIN, MARGIN, w, None);
+        let top = MARGIN + frag.height + GAP;
+        let summary = canvas.summary(board, MARGIN, top, w);
+        let mut desc = canvas.counts.describe(topology);
+        desc.push_str(&format!(
+            " Over it, the state of {}, drawn in the box of each space governed and stated in \
+             words below the picture.",
+            plural(board.governors().len(), "governor", "governors")
+        ));
+        Layout {
+            body: frag.svg,
+            height: top + summary.height + MARGIN,
+            title: format!("{}, with governor state", title(topology)),
+            desc,
+            status: Some(Status {
+                svg: summary.svg,
+                id: format!("ikds-{:016x}", fnv1a(plain.body.as_bytes())),
+            }),
             texts: canvas.texts,
         }
     }
 
     pub(crate) fn svg(&self) -> String {
+        if let Some(status) = &self.status {
+            return self.svg_with_state(status);
+        }
         let id = format!("ikd-{:016x}", fnv1a(self.body.as_bytes()));
         let mut out = String::with_capacity(self.body.len() + 4096);
         let _ = write!(
@@ -128,6 +225,35 @@ impl Layout {
         );
         out.push_str(&self.body);
         out.push_str("</svg>\n");
+        out
+    }
+
+    /// A picture with a state layer: a `role="group"` named by its title, holding the
+    /// arrangement as a `role="img"` (its own text is drawn, not read) and the words as
+    /// a `role="status"` live region of real text a screen reader reaches.
+    fn svg_with_state(&self, status: &Status) -> String {
+        let id = &status.id;
+        let mut out = String::with_capacity(self.body.len() + status.svg.len() + 4096);
+        let _ = write!(
+            out,
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" xml:lang=\"en\" lang=\"en\" width=\"{WIDTH}\" height=\"{h}\" \
+             viewBox=\"0 0 {WIDTH} {h}\" role=\"group\" aria-labelledby=\"{id}-title\" \
+             class=\"ikd\">\n<title id=\"{id}-title\">{title}</title>\n\
+             <desc id=\"{id}-desc\">{desc}</desc>\n<style>{style}</style>\n\
+             <rect class=\"ikd-bg\" width=\"{WIDTH}\" height=\"{h}\"/>\n\
+             <g role=\"img\" aria-labelledby=\"{id}-title {id}-desc\">\n",
+            h = self.height,
+            title = xml(&self.title),
+            desc = xml(&self.desc),
+            style = palette::stylesheet_with_state(),
+        );
+        out.push_str(&self.body);
+        let _ = write!(
+            out,
+            "</g>\n<g id=\"{id}-status\" role=\"status\" aria-live=\"polite\" aria-atomic=\"true\">\n"
+        );
+        out.push_str(&status.svg);
+        out.push_str("</g>\n</svg>\n");
         out
     }
 }
@@ -165,6 +291,7 @@ pub(crate) fn problem(subject: &str, reason: &str) -> String {
         height: frag.height + 2 * MARGIN,
         title: format!("Not an arrangement: {subject}"),
         desc: format!("{subject} does not declare an arrangement: {reason}"),
+        status: None,
         texts: canvas.texts,
     }
     .svg()
@@ -219,6 +346,52 @@ struct Canvas {
     seen: BTreeSet<String>,
     counts: Counts,
     texts: Vec<Placed>,
+    /// The state layer: empty for a plain picture.
+    overlay: Overlay,
+}
+
+/// What the state layer draws where: every governed space's governors, by the
+/// space's IRI (`thr:governs`), and which governors were drawn on a box.
+#[derive(Default)]
+struct Overlay {
+    on: BTreeMap<String, Vec<Badge>>,
+    /// The governed spaces whose boxes the layer was drawn in.
+    drawn: BTreeSet<String>,
+}
+
+/// One governor's mark on a space: it governs the space, or the space is one of a
+/// failover's candidates.
+#[derive(Clone)]
+enum Badge {
+    Governs(Governor),
+    Candidate { failover: Governor, order: u64 },
+}
+
+impl Overlay {
+    fn of(board: &Board) -> Overlay {
+        let mut on: BTreeMap<String, Vec<Badge>> = BTreeMap::new();
+        for g in board.governors() {
+            if let Some(space) = g.governs() {
+                on.entry(space.to_string())
+                    .or_default()
+                    .push(Badge::Governs(g.clone()));
+            }
+            if let GovernorKind::Failover { candidates } = g.kind() {
+                for c in candidates {
+                    if let Some(space) = &c.governs {
+                        on.entry(space.clone()).or_default().push(Badge::Candidate {
+                            failover: g.clone(),
+                            order: c.order,
+                        });
+                    }
+                }
+            }
+        }
+        Overlay {
+            on,
+            drawn: BTreeSet::new(),
+        }
+    }
 }
 
 /// A styled run of text: the classes it carries and the text itself.
@@ -267,6 +440,7 @@ impl Canvas {
         self.counts.count(t);
 
         let mut svg = String::new();
+        let governed = iri.clone();
         let head = Head {
             kind,
             tag,
@@ -275,6 +449,11 @@ impl Canvas {
             iri,
         };
         let mut cursor = self.header(&mut svg, x, y, w, head) + PAD / 2;
+
+        // The state layer: what governs this space, under its header band.
+        if let Some(space) = &governed {
+            cursor = self.badges(&mut svg, space, x, y + cursor, w) - y;
+        }
 
         // Rows the kind carries.
         let note = |text: &str| vec![("ikd-m", text.to_string())];
@@ -508,6 +687,120 @@ impl Canvas {
         y
     }
 
+    /// The governors over `space`, each a band naming it and a row per key, state
+    /// word first. Returns the next free line.
+    fn badges(&mut self, svg: &mut String, space: &str, x: u32, mut y: u32, w: u32) -> u32 {
+        let Some(badges) = self.overlay.on.get(space).cloned() else {
+            return y;
+        };
+        self.overlay.drawn.insert(space.to_string());
+        for badge in badges {
+            let (head, rows) = match &badge {
+                Badge::Governs(g) => {
+                    let mut head = vec![
+                        ("ikd-m", "governed by ".to_string()),
+                        ("ikd-x ikd-b", g.kind_word().to_string()),
+                        ("ikd-x", format!(" {}", g.name())),
+                    ];
+                    if let Some(facts) = facts(g) {
+                        head.push(("ikd-m", format!(" · {facts}")));
+                    }
+                    let rows: Vec<Vec<Run>> = if g.keys().is_empty() {
+                        vec![vec![("ikd-m", nothing_yet(g).to_string())]]
+                    } else {
+                        g.keys().iter().map(key_runs).collect()
+                    };
+                    (head, rows)
+                }
+                Badge::Candidate { failover, order } => {
+                    let head = vec![
+                        ("ikd-m", "candidate ".to_string()),
+                        ("ikd-x ikd-b", order.to_string()),
+                        ("ikd-m", " of failover ".to_string()),
+                        ("ikd-x", failover.name().to_string()),
+                    ];
+                    let mut rows: Vec<Vec<Run>> = failover
+                        .keys()
+                        .iter()
+                        .filter_map(|k| match k {
+                            KeyState::Route {
+                                target,
+                                last_candidate: Some(n),
+                                mode,
+                            } if n == order => Some(vec![
+                                mark(mode),
+                                ("ikd-m", " route ".to_string()),
+                                ("ikd-x", target.clone()),
+                                ("ikd-m", " · its last call ended here".to_string()),
+                            ]),
+                            _ => None,
+                        })
+                        .collect();
+                    if rows.is_empty() {
+                        rows.push(vec![("ikd-m", "no route's last call ended here".into())]);
+                    }
+                    (head, rows)
+                }
+            };
+            // The band goes under the governor's line: written first.
+            let _ = writeln!(
+                svg,
+                "<rect class=\"ikd-t-state\" x=\"{bx}\" y=\"{y}\" width=\"{bw}\" height=\"{LINE}\" rx=\"2\"/>",
+                bx = x + PAD / 2,
+                bw = w - PAD,
+            );
+            self.text(svg, x + PAD, y, w - 2 * PAD, &head);
+            y += LINE;
+            for row in rows {
+                self.text(svg, x + PAD + INDENT, y, w - 2 * PAD - INDENT, &row);
+                y += LINE;
+            }
+            y += PAD / 2;
+        }
+        y
+    }
+
+    /// The summary box: the state in words, every governor and key the layer shows,
+    /// and where each governor is drawn. Its lines are real text in the status region.
+    fn summary(&mut self, board: &Board, x: u32, y: u32, w: u32) -> Frag {
+        let mut svg = String::new();
+        let head = Head {
+            kind: Kind::State,
+            tag: None,
+            label: "Governor state",
+            detail: plural(board.governors().len(), "governor", "governors"),
+            iri: None,
+        };
+        let mut cursor = self.header(&mut svg, x, y, w, head) + PAD / 2;
+        let budget = chars(w - 2 * PAD);
+        for g in board.governors() {
+            let mut paragraphs = vec![(true, governor_sentence(g, &self.overlay.drawn))];
+            if g.keys().is_empty() {
+                paragraphs.push((false, format!("{}.", capitalize(nothing_yet(g)))));
+            }
+            for k in g.keys() {
+                paragraphs.push((false, key_sentence(k)));
+            }
+            for (first, text) in paragraphs {
+                let indent = if first { 0 } else { INDENT };
+                let lines = wrap(&clean(&text), budget - chars(indent));
+                for line in lines {
+                    let class = if first { "ikd-x ikd-b" } else { "ikd-x" };
+                    self.text(
+                        &mut svg,
+                        x + PAD + indent,
+                        y + cursor,
+                        w - 2 * PAD - indent,
+                        &[(class, line)],
+                    );
+                    cursor += LINE;
+                }
+            }
+            cursor += PAD / 2;
+        }
+        boxed(svg, x, y, w, cursor + PAD / 2, Kind::State)
+    }
+
     /// One column of a row: a single run fitted to `width` characters.
     fn cell(&mut self, svg: &mut String, x: u32, top: u32, width: usize, run: Run) {
         self.text(svg, x, top, advance(width), &[run]);
@@ -536,6 +829,221 @@ impl Canvas {
         } else {
             let _ = writeln!(svg, "{line}");
         }
+    }
+}
+
+/// A state as a mark: the word, upper-case and bold, in its tone's color.
+fn mark(mode: &Mode) -> Run {
+    let class = match mode.tone() {
+        Tone::Go => "ikd-st-go ikd-b",
+        Tone::Wait => "ikd-st-wait ikd-b",
+        Tone::Stop => "ikd-st-stop ikd-b",
+        Tone::Unknown => "ikd-st-unknown ikd-b",
+    };
+    (class, mode.word().to_uppercase())
+}
+
+/// A key's row on its governed box: the state word first, so a cut never takes it.
+fn key_runs(key: &KeyState) -> Vec<Run> {
+    match key {
+        KeyState::Window {
+            prefix,
+            max,
+            window_millis,
+            hits,
+            mode,
+        } => vec![
+            mark(mode),
+            ("ikd-m", " window ".into()),
+            ("ikd-x", prefix.clone()),
+            ("ikd-m", " · ".into()),
+            (
+                "ikd-x",
+                format!("{hits} of {max} per {}", span(*window_millis)),
+            ),
+        ],
+        KeyState::Circuit {
+            target,
+            failures,
+            mode,
+        } => vec![
+            mark(mode),
+            ("ikd-m", " circuit ".into()),
+            ("ikd-x", target.clone()),
+            ("ikd-m", " · ".into()),
+            ("ikd-x", failures_phrase(*failures)),
+        ],
+        KeyState::Bulkhead {
+            prefix,
+            max,
+            running,
+            parked,
+            mode,
+        } => vec![
+            mark(mode),
+            ("ikd-m", " bulkhead ".into()),
+            ("ikd-x", prefix.clone()),
+            ("ikd-m", " · ".into()),
+            (
+                "ikd-x",
+                format!("{running} of {max} running, {parked} parked"),
+            ),
+        ],
+        KeyState::Route {
+            target,
+            last_candidate,
+            mode,
+        } => vec![
+            mark(mode),
+            ("ikd-m", " route ".into()),
+            ("ikd-x", target.clone()),
+            ("ikd-m", " · ".into()),
+            ("ikd-x", route_phrase(*last_candidate)),
+        ],
+        KeyState::Other { class } => {
+            vec![("ikd-m", format!("a {class} this renderer does not know"))]
+        }
+    }
+}
+
+/// A key in words, for the summary.
+fn key_sentence(key: &KeyState) -> String {
+    match key {
+        KeyState::Window {
+            prefix,
+            max,
+            window_millis,
+            hits,
+            mode,
+        } => format!(
+            "Window {prefix}: {}, {hits} of {max} per {}.",
+            mode.word(),
+            span(*window_millis)
+        ),
+        KeyState::Circuit {
+            target,
+            failures,
+            mode,
+        } => format!(
+            "Circuit {target}: {}, {}.",
+            mode.word(),
+            failures_phrase(*failures)
+        ),
+        KeyState::Bulkhead {
+            prefix,
+            max,
+            running,
+            parked,
+            mode,
+        } => format!(
+            "Bulkhead {prefix}: {}, {running} of {max} running, {parked} parked.",
+            mode.word()
+        ),
+        KeyState::Route {
+            target,
+            last_candidate,
+            mode,
+        } => format!(
+            "Route {target}: {}, {}.",
+            mode.word(),
+            route_phrase(*last_candidate)
+        ),
+        KeyState::Other { class } => format!("A {class} this renderer does not know."),
+    }
+}
+
+fn failures_phrase(failures: u64) -> String {
+    format!(
+        "{failures} consecutive transient failure{}",
+        if failures == 1 { "" } else { "s" }
+    )
+}
+
+fn route_phrase(last: Option<u64>) -> String {
+    match last {
+        Some(n) => format!("last call ended at candidate {n}"),
+        None => "no last candidate named".into(),
+    }
+}
+
+/// The facts a governor's kind carries, for its band.
+fn facts(g: &Governor) -> Option<String> {
+    match g.kind() {
+        GovernorKind::CircuitBreaker {
+            threshold,
+            cooldown_millis,
+        } => {
+            let mut parts = Vec::new();
+            if let Some(t) = threshold {
+                parts.push(format!("trips after {t}"));
+            }
+            if let Some(c) = cooldown_millis {
+                parts.push(format!("cooldown {}", span(*c)));
+            }
+            (!parts.is_empty()).then(|| parts.join(", "))
+        }
+        _ => None,
+    }
+}
+
+/// What a governor with no keys has to say.
+fn nothing_yet(g: &Governor) -> &'static str {
+    match g.kind() {
+        GovernorKind::CircuitBreaker { .. } => "no target has failed: every circuit is closed",
+        GovernorKind::Failover { .. } => "no call has been routed yet",
+        _ => "no key is limited",
+    }
+}
+
+/// A governor in words: what it is, what it governs, and whether the picture shows it.
+fn governor_sentence(g: &Governor, drawn: &BTreeSet<String>) -> String {
+    let shown = |space: &str| {
+        if drawn.contains(space) {
+            "drawn above"
+        } else {
+            "not in this arrangement"
+        }
+    };
+    let mut out = format!("{}, a {}", g.name(), g.kind_word());
+    match g.kind() {
+        GovernorKind::Failover { candidates } => {
+            let _ = write!(
+                out,
+                " over {}",
+                plural(candidates.len(), "candidate", "candidates")
+            );
+            let cells: Vec<String> = candidates
+                .iter()
+                .map(|c| match &c.governs {
+                    Some(space) => {
+                        format!("candidate {} governs {space} ({})", c.order, shown(space))
+                    }
+                    None => format!("candidate {} governs an anonymous space", c.order),
+                })
+                .collect();
+            if !cells.is_empty() {
+                let _ = write!(out, ": {}", cells.join("; "));
+            }
+        }
+        _ => match g.governs() {
+            Some(space) => {
+                let _ = write!(out, ", governs {space} ({})", shown(space));
+            }
+            None => out.push_str(", governs an anonymous space, which the picture cannot place"),
+        },
+    }
+    if let Some(facts) = facts(g) {
+        let _ = write!(out, "; {facts}");
+    }
+    out.push('.');
+    out
+}
+
+fn capitalize(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(c) => c.to_uppercase().chain(chars).collect(),
+        None => String::new(),
     }
 }
 
@@ -1092,6 +1600,46 @@ mod tests {
         let svg = render(&tree);
         assert!(svg.contains(&format!("<title>Dynamic space  {declaration}</title>")));
         assert!(svg.contains('…'));
+    }
+
+    /// The state layer keeps the floor: no overlap, nothing past its box, every state
+    /// word visible on its row (first, so a cut cannot take it), with every state value,
+    /// a target long enough to be cut, and the host-sized arrangement under it.
+    #[test]
+    fn the_state_layer_is_legible() {
+        let governed = Topology::from_turtle(include_str!("../tests/fixtures/state/governed.ttl"))
+            .expect("the fixture parses");
+        for board in [
+            include_str!("../tests/fixtures/state/board.ttl").to_string(),
+            include_str!("../tests/fixtures/state/every-state.ttl").to_string(),
+            include_str!("../tests/fixtures/state/every-state.ttl").replace(
+                "urn:demo:breaker:flaky>",
+                &format!("urn:demo:breaker:{}>", "flaky".repeat(40)),
+            ),
+        ] {
+            let board = Board::from_turtle(&board).expect("the board parses");
+            let layout = Layout::with_state(&governed, &board);
+            assert!(layout.texts.len() > 2);
+            for (i, a) in layout.texts.iter().enumerate() {
+                assert!(a.x + a.width <= a.limit, "text overruns its box: {a:?}");
+                assert!(a.limit <= WIDTH - MARGIN, "past the width bound: {a:?}");
+                for b in &layout.texts[i + 1..] {
+                    let same_line = a.top.abs_diff(b.top) < LINE;
+                    let apart = a.x + a.width <= b.x || b.x + b.width <= a.x;
+                    assert!(!same_line || apart, "overlapping text: {a:?} and {b:?}");
+                }
+            }
+            let svg = layout.svg();
+            assert!(svg.contains(">HALF-OPEN</tspan>") || svg.contains(">OPEN</tspan>"));
+        }
+        // Over the host-sized arrangement, nothing governs a named space: the words
+        // still say every governor, and say it is not in this arrangement.
+        let board = Board::from_turtle(include_str!("../tests/fixtures/state/board.ttl"))
+            .expect("the board parses");
+        let svg = render_with_state(&host_sized(), &board);
+        assert!(svg.contains(">Governor state</tspan>"), "{svg}");
+        assert!(svg.contains("not in this arrangement"), "{svg}");
+        assert!(!svg.contains("drawn above"), "{svg}");
     }
 
     #[test]
