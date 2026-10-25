@@ -132,13 +132,14 @@ pub mod palette;
 mod render;
 pub mod state;
 
-pub use render::{render, render_with_state, WIDTH};
+pub use render::{render, render_in, render_with_state, render_with_state_in, WIDTH};
 
 use ikigai_core::{
     space_iri, ArgRef, ArgSpec, AsyncFnEndpoint, Description, EndpointSpace, Error, Exact,
     Invocation, Iri, ReprType, Representation, Request, Result, Topology, Verb,
 };
 
+use palette::Colors;
 use state::{Board, BOARD, STATE_CAP_FAMILY};
 
 /// The picture of the arrangement `of` names.
@@ -160,6 +161,8 @@ pub const CAP_INSPECT: &str = "urn:cap:kernel:inspect";
 const TURTLE: &str = "text/turtle";
 /// The XSD `anyURI` datatype IRI — the `class` of `of`.
 const XSD_ANY_URI: &str = "http://www.w3.org/2001/XMLSchema#anyURI";
+/// The XSD `string` datatype IRI — the `class` of `scheme`.
+const XSD_STRING: &str = "http://www.w3.org/2001/XMLSchema#string";
 
 /// The name [`space`] claims: `urn:iki:space:diagram`.
 pub const SPACE_ID: &str = "urn:iki:space:diagram";
@@ -184,8 +187,9 @@ pub fn arrangement() -> AsyncFnEndpoint {
     AsyncFnEndpoint::new("diagram-arrangement", |inv| {
         Box::pin(async move {
             let of = of(inv)?;
+            let colors = colors(inv)?;
             let (bytes, media) = source_turtle(inv, &of).await?;
-            Ok(picture(&of, &bytes, &media))
+            Ok(picture(&of, &bytes, &media, colors))
         })
     })
     .with_description(
@@ -200,6 +204,7 @@ pub fn arrangement() -> AsyncFnEndpoint {
             )
             .verb(Verb::Source)
             .verb(Verb::Meta)
+            .input(scheme_input())
             .input(
                 ArgSpec::new("of")
                     .summary(
@@ -217,7 +222,10 @@ pub fn arrangement() -> AsyncFnEndpoint {
 /// caller's own request sees.
 pub fn kernel() -> AsyncFnEndpoint {
     AsyncFnEndpoint::new("diagram-kernel", |inv| {
-        Box::pin(async move { Ok(svg(render(&kernel_tree(inv).await?))) })
+        Box::pin(async move {
+            let colors = colors(inv)?;
+            Ok(svg(render_in(&kernel_tree(inv).await?, colors)))
+        })
     })
     .with_description(
         Description::new("diagram-kernel")
@@ -230,6 +238,7 @@ pub fn kernel() -> AsyncFnEndpoint {
             )
             .verb(Verb::Source)
             .verb(Verb::Meta)
+            .input(scheme_input())
             .requires(CAP_INSPECT)
             .output(SVG),
     )
@@ -240,8 +249,9 @@ pub fn kernel() -> AsyncFnEndpoint {
 pub fn state() -> AsyncFnEndpoint {
     AsyncFnEndpoint::new("diagram-state", |inv| {
         Box::pin(async move {
+            let colors = colors(inv)?;
             let tree = kernel_tree(inv).await?;
-            Ok(svg(render_with_state(&tree, &board(inv).await?)))
+            Ok(svg(render_with_state_in(&tree, &board(inv).await?, colors)))
         })
     })
     .with_description(
@@ -257,6 +267,7 @@ pub fn state() -> AsyncFnEndpoint {
             )
             .verb(Verb::Source)
             .verb(Verb::Meta)
+            .input(scheme_input())
             .requires(CAP_INSPECT)
             .output(SVG),
     )
@@ -268,13 +279,14 @@ pub fn state_arrangement() -> AsyncFnEndpoint {
     AsyncFnEndpoint::new("diagram-state-arrangement", |inv| {
         Box::pin(async move {
             let of = of(inv)?;
+            let colors = colors(inv)?;
             let (bytes, media) = source_turtle(inv, &of).await?;
             let tree = match std::str::from_utf8(&bytes).map(Topology::from_turtle) {
                 Ok(Ok(tree)) => tree,
                 // Not an arrangement: the same picture saying why, and no state to draw.
-                _ => return Ok(picture(&of, &bytes, &media)),
+                _ => return Ok(picture(&of, &bytes, &media, colors)),
             };
-            Ok(svg(render_with_state(&tree, &board(inv).await?)))
+            Ok(svg(render_with_state_in(&tree, &board(inv).await?, colors)))
         })
     })
     .with_description(
@@ -288,6 +300,7 @@ pub fn state_arrangement() -> AsyncFnEndpoint {
             )
             .verb(Verb::Source)
             .verb(Verb::Meta)
+            .input(scheme_input())
             .input(
                 ArgSpec::new("of")
                     .summary(
@@ -409,21 +422,48 @@ async fn source_turtle(inv: &Invocation<'_>, of: &Iri) -> Result<(Vec<u8>, Strin
 }
 
 /// The picture of what was read: the arrangement, or why it is not one.
-fn picture(of: &Iri, bytes: &[u8], media: &str) -> Representation {
+fn picture(of: &Iri, bytes: &[u8], media: &str, colors: Colors) -> Representation {
     let Ok(text) = std::str::from_utf8(bytes) else {
-        return svg(render::problem(
+        return svg(render::problem_in(
             of.as_str(),
             &format!("it is served as {media} and is not UTF-8 text, so it cannot be Turtle"),
+            colors,
         ));
     };
     match Topology::from_turtle(text) {
-        Ok(tree) => svg(render(&tree)),
-        Err(e) if media == TURTLE => svg(render::problem(of.as_str(), &e.to_string())),
-        Err(e) => svg(render::problem(
+        Ok(tree) => svg(render_in(&tree, colors)),
+        Err(e) if media == TURTLE => svg(render::problem_in(of.as_str(), &e.to_string(), colors)),
+        Err(e) => svg(render::problem_in(
             of.as_str(),
             &format!("it is served as {media}, which nothing converts to {TURTLE}, and it does not parse as one: {e}"),
+            colors,
         )),
     }
+}
+
+/// The `scheme` a caller asked for: `auto` (the default: both schemes, chosen by the
+/// viewer's system setting), `light` or `dark` ([`Colors`]). Anything else is refused.
+fn colors(inv: &Invocation<'_>) -> Result<Colors> {
+    match inv.inline_str("scheme") {
+        Err(_) => Ok(Colors::Auto),
+        Ok(word) => Colors::parse(word).ok_or_else(|| Error::InvalidArgument {
+            name: "scheme".to_string(),
+            detail: format!("`{word}` is not a scheme: auto, light or dark"),
+        }),
+    }
+}
+
+/// The `scheme` input every picture declares.
+fn scheme_input() -> ArgSpec {
+    ArgSpec::new("scheme")
+        .optional()
+        .class(XSD_STRING)
+        .one_of(Colors::WORDS)
+        .default_value("auto")
+        .summary(
+            "the colors to draw in: auto (both schemes, chosen by the viewer's system \
+             setting), or light or dark, for a page with a theme of its own",
+        )
 }
 
 /// A media type without its parameters, lowercased: `text/turtle; charset=utf-8`

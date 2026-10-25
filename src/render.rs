@@ -12,7 +12,7 @@ use std::fmt::Write as _;
 
 use ikigai_core::{Door, SpaceKind, Topology, TopologyRule};
 
-use crate::palette::{self, Kind};
+use crate::palette::{self, Colors, Kind};
 use crate::state::{span, Board, Governor, GovernorKind, KeyState, Mode, Tone};
 
 /// The picture's width: the bound the layout fits every box and every line into.
@@ -71,7 +71,25 @@ const ELLIPSIS: char = '…';
 /// assert!(svg.contains("Named spaces, in the order drawn: urn:iki:space:hello.</desc>"));
 /// ```
 pub fn render(topology: &Topology) -> String {
-    Layout::of(topology).svg()
+    render_in(topology, Colors::Auto)
+}
+
+/// [`render`], carrying only the colors `colors` chooses (a page with a theme of its own
+/// asks for the one it is in).
+///
+/// ```
+/// use ikigai_core::{SpaceKind, Topology};
+/// use ikigai_diagram::{palette::Colors, render, render_in};
+///
+/// let leaf = Topology::new(SpaceKind::EndpointSpace { doors: vec![] });
+/// assert_eq!(render_in(&leaf, Colors::Auto), render(&leaf));
+/// let dark = render_in(&leaf, Colors::Dark);
+/// assert!(!dark.contains("prefers-color-scheme"));
+/// assert!(dark.contains(".ikd-bg{fill:#0d1117}"));
+/// assert!(render_in(&leaf, Colors::Light).contains(".ikd-bg{fill:#ffffff}"));
+/// ```
+pub fn render_in(topology: &Topology, colors: Colors) -> String {
+    Layout::of(topology).colored(colors).svg()
 }
 
 /// Render an arrangement with a STATE LAYER: what the governors on `board` hold,
@@ -120,10 +138,15 @@ pub fn render(topology: &Topology) -> String {
 /// assert_eq!(ikigai_diagram::render_with_state(&space, &Board::empty()), ikigai_diagram::render(&space));
 /// ```
 pub fn render_with_state(topology: &Topology, board: &Board) -> String {
+    render_with_state_in(topology, board, Colors::Auto)
+}
+
+/// [`render_with_state`], carrying only the colors `colors` chooses.
+pub fn render_with_state_in(topology: &Topology, board: &Board, colors: Colors) -> String {
     if board.is_empty() {
-        return render(topology);
+        return render_in(topology, colors);
     }
-    Layout::with_state(topology, board).svg()
+    Layout::with_state(topology, board).colored(colors).svg()
 }
 
 /// A laid-out picture: the body, its height, and what the prose summary needs.
@@ -141,6 +164,8 @@ pub(crate) struct Layout {
     /// ships; only the tests read it, hence the allow outside them.
     #[cfg_attr(not(test), allow(dead_code))]
     pub(crate) texts: Vec<Placed>,
+    /// Which colors the stylesheet carries: see [`Colors`].
+    colors: Colors,
 }
 
 /// One line of text as the layout placed it: its left edge, top, measured width,
@@ -172,6 +197,7 @@ impl Layout {
             desc: canvas.counts.describe(topology),
             status: None,
             texts: canvas.texts,
+            colors: Colors::Auto,
         }
     }
 
@@ -202,7 +228,14 @@ impl Layout {
                 id: format!("ikds-{:016x}", fnv1a(plain.body.as_bytes())),
             }),
             texts: canvas.texts,
+            colors: Colors::Auto,
         }
+    }
+
+    /// This layout, carrying `colors`.
+    pub(crate) fn colored(mut self, colors: Colors) -> Layout {
+        self.colors = colors;
+        self
     }
 
     pub(crate) fn svg(&self) -> String {
@@ -221,7 +254,7 @@ impl Layout {
             h = self.height,
             title = xml(&self.title),
             desc = xml(&self.desc),
-            style = palette::stylesheet(),
+            style = palette::stylesheet_in(self.colors),
         );
         out.push_str(&self.body);
         out.push_str("</svg>\n");
@@ -245,7 +278,7 @@ impl Layout {
             h = self.height,
             title = xml(&self.title),
             desc = xml(&self.desc),
-            style = palette::stylesheet_with_state(),
+            style = palette::stylesheet_with_state_in(self.colors),
         );
         out.push_str(&self.body);
         let _ = write!(
@@ -263,7 +296,7 @@ impl Layout {
 /// not an arrangement" is a legitimate answer about the file, and an answer is
 /// cacheable where a refusal is not: it hangs from the thread of what was read, so
 /// fixing the file redraws the picture.
-pub(crate) fn problem(subject: &str, reason: &str) -> String {
+pub(crate) fn problem_in(subject: &str, reason: &str, colors: Colors) -> String {
     let mut canvas = Canvas::default();
     let (x, y, w) = (MARGIN, MARGIN, WIDTH - 2 * MARGIN);
     let mut svg = String::new();
@@ -293,6 +326,7 @@ pub(crate) fn problem(subject: &str, reason: &str) -> String {
         desc: format!("{subject} does not declare an arrangement: {reason}"),
         status: None,
         texts: canvas.texts,
+        colors,
     }
     .svg()
 }
