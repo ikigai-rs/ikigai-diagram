@@ -249,3 +249,33 @@ fn the_same_tree_is_the_same_bytes_through_the_kernel() {
     let b = tic_tac_toe_kernel().topology();
     assert!(render(&a) == render(&b), "two kernels, one picture");
 }
+
+/// `scheme=` (Brian, 2026-10-24): a page with a theme of its own asks for the colors it is
+/// in, so the picture matches the page rather than the viewer's system setting. `auto` (the
+/// default) is the picture as before, byte for byte; `light` and `dark` carry one scheme and
+/// no media query; anything else is refused.
+#[test]
+fn a_picture_takes_the_colors_its_page_asks_for() {
+    let kernel = kernel_with(EndpointSpace::new());
+    let draw = |scheme: Option<&str>| {
+        let mut request = Request::new(ikigai_core::Verb::Source, iri(KERNEL));
+        if let Some(s) = scheme {
+            request =
+                request.with_arg("scheme", ikigai_core::ArgRef::Inline(s.as_bytes().to_vec()));
+        }
+        block_on(kernel.issue(request, &Capability::scoped([CAP_INSPECT])))
+    };
+    let plain = text(&draw(None).unwrap());
+    assert_eq!(text(&draw(Some("auto")).unwrap()), plain);
+    assert!(plain.contains("prefers-color-scheme"));
+    let dark = text(&draw(Some("dark")).unwrap());
+    assert!(!dark.contains("prefers-color-scheme"), "{dark}");
+    assert!(dark.contains(".ikd-bg{fill:#0d1117}"), "{dark}");
+    let light = text(&draw(Some("light")).unwrap());
+    assert!(!light.contains("prefers-color-scheme") && light.contains(".ikd-bg{fill:#ffffff}"));
+    let refused = draw(Some("navy")).expect_err("not a scheme");
+    assert!(
+        matches!(refused, Error::InvalidArgument { ref name, .. } if name == "scheme"),
+        "{refused:?}"
+    );
+}

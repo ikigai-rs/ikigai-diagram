@@ -230,29 +230,75 @@ fn rules(scheme: &Scheme) -> String {
     css
 }
 
-/// The picture's whole `<style>` body: layout rules, the light tokens, and the
-/// dark tokens under `prefers-color-scheme: dark`.
-pub(crate) fn stylesheet() -> String {
+/// Which colors a picture carries.
+///
+/// [`Auto`](Colors::Auto), the default, carries both schemes and lets the viewer's system
+/// setting choose (`prefers-color-scheme`). A page with a theme of its own asks for
+/// [`Light`](Colors::Light) or [`Dark`](Colors::Dark) instead, so the picture matches the
+/// page and not the operating system: a book in a dark theme on a machine set to light would
+/// otherwise show a white picture on a dark page (Brian, 2026-10-24).
+///
+/// ```
+/// use ikigai_diagram::palette::Colors;
+/// assert_eq!(Colors::parse("dark"), Some(Colors::Dark));
+/// assert_eq!(Colors::parse("auto"), Some(Colors::Auto));
+/// assert_eq!(Colors::parse("navy"), None);
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Colors {
+    /// Both schemes, chosen by `prefers-color-scheme`.
+    #[default]
+    Auto,
+    /// The light scheme only.
+    Light,
+    /// The dark scheme only, unconditionally.
+    Dark,
+}
+
+impl Colors {
+    /// The words `scheme=` takes: `auto`, `light` or `dark`.
+    pub const WORDS: [&'static str; 3] = ["auto", "light", "dark"];
+
+    /// `auto`, `light` or `dark`; anything else is `None`.
+    pub fn parse(word: &str) -> Option<Colors> {
+        match word {
+            "auto" => Some(Colors::Auto),
+            "light" => Some(Colors::Light),
+            "dark" => Some(Colors::Dark),
+            _ => None,
+        }
+    }
+
+    /// `light` and `dark` rules as this choice carries them.
+    fn tokens(self, light: String, dark: String) -> String {
+        match self {
+            Colors::Auto => format!("{light}@media (prefers-color-scheme:dark){{{dark}}}"),
+            Colors::Light => light,
+            Colors::Dark => dark,
+        }
+    }
+}
+
+/// The picture's whole `<style>` body: layout rules and the tokens `colors` carries (with
+/// `Auto`, the light tokens and the dark ones under `prefers-color-scheme: dark`).
+pub(crate) fn stylesheet_in(colors: Colors) -> String {
     format!(
         ".ikd{{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,\"Liberation Mono\",monospace;\
          font-size:13px}}\
          .ikd-b{{font-weight:700}}\
          .ikd-hole{{stroke-dasharray:6 4}}.ikd-dim{{stroke-dasharray:2 3}}\
-         {light}\
-         @media (prefers-color-scheme:dark){{{dark}}}",
-        light = rules(&LIGHT),
-        dark = rules(&DARK),
+         {tokens}",
+        tokens = colors.tokens(rules(&LIGHT), rules(&DARK)),
     )
 }
 
-/// The `<style>` body of a picture WITH a state layer: [`stylesheet`] plus the state
-/// tokens, light and then dark under the same media query.
-pub(crate) fn stylesheet_with_state() -> String {
+/// The `<style>` body of a picture WITH a state layer: [`stylesheet_in`] plus the state
+/// tokens, carried the same way.
+pub(crate) fn stylesheet_with_state_in(colors: Colors) -> String {
     format!(
-        "{base}{light}@media (prefers-color-scheme:dark){{{dark}}}",
-        base = stylesheet(),
-        light = state_rules(&LIGHT_STATE),
-        dark = state_rules(&DARK_STATE),
+        "{base}{state}",
+        base = stylesheet_in(colors),
+        state = colors.tokens(state_rules(&LIGHT_STATE), state_rules(&DARK_STATE)),
     )
 }
 
