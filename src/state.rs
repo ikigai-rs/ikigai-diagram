@@ -495,3 +495,200 @@ pub(crate) fn span(millis: u64) -> String {
         format!("{millis}ms")
     }
 }
+
+impl KeyState {
+    /// What this key is over, the same across two boards: its kind and its target or prefix.
+    pub(crate) fn id(&self) -> String {
+        match self {
+            KeyState::Window { prefix, .. } => format!("window {prefix}"),
+            KeyState::Circuit { target, .. } => format!("circuit {target}"),
+            KeyState::Bulkhead { prefix, .. } => format!("bulkhead {prefix}"),
+            KeyState::Route { target, .. } => format!("route {target}"),
+            KeyState::Other { class } => format!("other {class}"),
+        }
+    }
+
+    /// Its state, when its kind has one.
+    pub(crate) fn mode(&self) -> Option<&Mode> {
+        match self {
+            KeyState::Window { mode, .. }
+            | KeyState::Circuit { mode, .. }
+            | KeyState::Bulkhead { mode, .. }
+            | KeyState::Route { mode, .. } => Some(mode),
+            KeyState::Other { .. } => None,
+        }
+    }
+}
+
+/// How one key differs from an earlier board's.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum Change {
+    /// The earlier board did not have it.
+    New,
+    /// The earlier board had it, in this state.
+    Was(KeyState),
+}
+
+/// What changed between an earlier board and a later one, key by key: what is new, what
+/// differs (and what it was), and what is gone. Drawn by
+/// [`render_with_changes_in`](crate::render_with_changes_in) as a marker after each changed
+/// key's state word, and stated first in the picture's words.
+///
+/// A key is the same key on both boards when its governor and what it is over (a circuit's
+/// target, a window's prefix) are the same.
+///
+/// ```
+/// use ikigai_diagram::state::{Board, Changes};
+///
+/// let board = |state: &str, failures: u32| Board::from_turtle(&[
+///     "@prefix thr: <https://ikigai-rs.dev/ns/throttle#> .",
+///     "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .",
+///     "<urn:throttle:state> a thr:StateBoard ; thr:governor <urn:throttle:state:b> .",
+///     "<urn:throttle:state:b> a thr:CircuitBreaker ; thr:name \"b\" ;",
+///     "    thr:key <urn:throttle:state:b:key:urn:demo:down> .",
+///     "<urn:throttle:state:b:key:urn:demo:down> a thr:Circuit ; thr:target <urn:demo:down> ;",
+///     &format!("    thr:failures \"{failures}\"^^xsd:nonNegativeInteger ; thr:state thr:{state} ."),
+/// ].join("\n")).unwrap();
+///
+/// let changes = Changes::between(&board("Closed", 0), &board("Open", 3));
+/// assert_eq!(changes.sentences(), ["Circuit urn:demo:down: was closed, now open, 3 consecutive transient failures."]);
+/// assert!(Changes::between(&board("Open", 3), &board("Open", 3)).is_empty());
+/// ```
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Changes {
+    /// By (governor IRI, key id).
+    keys: BTreeMap<(String, String), Change>,
+    /// Keys the earlier board had and this one does not, by governor IRI.
+    gone: BTreeMap<String, Vec<KeyState>>,
+    /// What each change says, in the later board's order, then what is gone.
+    sentences: Vec<String>,
+}
+
+impl Changes {
+    /// What changed from `before` to `after`.
+    pub fn between(before: &Board, after: &Board) -> Changes {
+        let mut changes = Changes::default();
+        let earlier = |g: &Governor| before.governors().iter().find(|b| b.iri() == g.iri());
+        for g in after.governors() {
+            let old = earlier(g);
+            for k in g.keys() {
+                let id = k.id();
+                let was = old.and_then(|o| o.keys().iter().find(|ok| ok.id() == id));
+                let change = match was {
+                    None => Change::New,
+                    Some(w) if w == k => continue,
+                    Some(w) => Change::Was(w.clone()),
+                };
+                changes.sentences.push(change_sentence(k, &change));
+                changes.keys.insert((g.iri().to_string(), id), change);
+            }
+            if let Some(o) = old {
+                let gone: Vec<KeyState> = o
+                    .keys()
+                    .iter()
+                    .filter(|ok| !g.keys().iter().any(|k| k.id() == ok.id()))
+                    .cloned()
+                    .collect();
+                for k in &gone {
+                    changes
+                        .sentences
+                        .push(format!("{} is gone.", capitalize_id(&k.id())));
+                }
+                if !gone.is_empty() {
+                    changes.gone.insert(g.iri().to_string(), gone);
+                }
+            }
+        }
+        changes
+    }
+
+    /// Whether nothing changed.
+    pub fn is_empty(&self) -> bool {
+        self.sentences.is_empty()
+    }
+
+    /// What changed, one sentence each.
+    pub fn sentences(&self) -> &[String] {
+        &self.sentences
+    }
+
+    /// How `key` of `governor` differs from the earlier board, if it does.
+    pub(crate) fn of(&self, governor: &str, key: &KeyState) -> Option<&Change> {
+        self.keys.get(&(governor.to_string(), key.id()))
+    }
+
+    /// The keys of `governor` the earlier board had and this one does not.
+    pub(crate) fn gone(&self, governor: &str) -> &[KeyState] {
+        self.gone
+            .get(governor)
+            .map(Vec::as_slice)
+            .unwrap_or_default()
+    }
+}
+
+/// "Circuit urn:demo:down: was closed, now open, 3 consecutive transient failures."
+fn change_sentence(key: &KeyState, change: &Change) -> String {
+    let now = key_now(key);
+    match change {
+        Change::New => format!("{} is new: {now}.", capitalize_id(&key.id())),
+        Change::Was(old) => match (old.mode(), key.mode()) {
+            (Some(a), Some(b)) if a != b => {
+                format!("{}: was {}, now {now}.", capitalize_id(&key.id()), a.word())
+            }
+            _ => format!("{}: now {now}.", capitalize_id(&key.id())),
+        },
+    }
+}
+
+/// A key's state and count, as the change sentence says them.
+fn key_now(key: &KeyState) -> String {
+    match key {
+        KeyState::Window {
+            max,
+            window_millis,
+            hits,
+            mode,
+            ..
+        } => {
+            format!(
+                "{}, {hits} of {max} per {}",
+                mode.word(),
+                span(*window_millis)
+            )
+        }
+        KeyState::Circuit { failures, mode, .. } => format!(
+            "{}, {failures} consecutive transient failure{}",
+            mode.word(),
+            if *failures == 1 { "" } else { "s" }
+        ),
+        KeyState::Bulkhead {
+            max,
+            running,
+            parked,
+            mode,
+            ..
+        } => {
+            format!(
+                "{}, {running} of {max} running, {parked} parked",
+                mode.word()
+            )
+        }
+        KeyState::Route {
+            last_candidate,
+            mode,
+            ..
+        } => match last_candidate {
+            Some(n) => format!("{}, last call ended at candidate {n}", mode.word()),
+            None => mode.word().to_string(),
+        },
+        KeyState::Other { class } => format!("a {class}"),
+    }
+}
+
+fn capitalize_id(id: &str) -> String {
+    let mut chars = id.chars();
+    match chars.next() {
+        Some(c) => c.to_uppercase().chain(chars).collect(),
+        None => String::new(),
+    }
+}

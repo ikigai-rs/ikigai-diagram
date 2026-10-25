@@ -4,7 +4,9 @@
 
 use ikigai_a11y::config::DEFAULT_MIN;
 use ikigai_a11y::{ratio, Rgba};
-use ikigai_diagram::palette::{Scheme, StateScheme, DARK, DARK_STATE, LIGHT, LIGHT_STATE};
+use ikigai_diagram::palette::{
+    Scheme, StateScheme, DARK, DARK_CHANGED, DARK_STATE, LIGHT, LIGHT_CHANGED, LIGHT_STATE,
+};
 
 /// WCAG 2.2 SC 1.4.11 (non-text contrast): a box's outline is what tells one box
 /// from the next, so it holds 3:1 against the page it is drawn on.
@@ -96,6 +98,17 @@ fn state_pairs(
             DEFAULT_MIN,
         ));
     }
+    let changed = if state.name == "dark" {
+        DARK_CHANGED
+    } else {
+        LIGHT_CHANGED
+    };
+    out.push((
+        "the CHANGED marker on the page".to_string(),
+        changed,
+        scheme.background,
+        DEFAULT_MIN,
+    ));
     out
 }
 

@@ -587,3 +587,104 @@ fn unattached_the_overlay_is_live_and_the_plain_picture_stays_cached() {
         "and leaves urn:diagram:kernel alone"
     );
 }
+
+// ---- before= and focus= (ledger #2217) ------------------------------------------------------
+
+fn read_with(
+    kernel: &Kernel,
+    iri: &str,
+    args: &[(&str, &str)],
+    cap: &Capability,
+) -> ikigai_core::Result<String> {
+    let mut request = Request::new(Verb::Source, Iri::parse(iri).unwrap());
+    for (k, v) in args {
+        request = request.with_arg(*k, ikigai_core::ArgRef::Inline(v.as_bytes().to_vec()));
+    }
+    block_on(kernel.issue(request, cap)).map(|r| String::from_utf8(r.bytes).unwrap())
+}
+
+/// `before=` an earlier board: each key that differs is marked right after its state word,
+/// in words (`(was CLOSED)`) as well as color, and the words begin with what changed. Against
+/// the same board nothing is marked and the words say so. A `before` that is not a board is
+/// refused.
+#[test]
+fn before_marks_what_changed_since_an_earlier_board() {
+    let kernel = host(Some(stub(true)));
+    let now = committed("fixtures/state/board.ttl").unwrap();
+    assert!(
+        now.contains("thr:state thr:Open"),
+        "the pinned board has an open key"
+    );
+    let earlier = now.replacen("thr:state thr:Open", "thr:state thr:Closed", 1);
+    let cap = Capability::root();
+
+    let svg = read_with(&kernel, STATE, &[("before", &earlier)], &cap).expect("drawn");
+    assert!(
+        svg.contains("<tspan class=\"ikd-chg ikd-b\"> (was CLOSED)</tspan>"),
+        "{svg}"
+    );
+    assert!(svg.contains("Changed since the earlier board:"), "{svg}");
+    assert!(svg.contains(": was closed, now open"), "{svg}");
+    assert!(
+        svg.contains(".ikd-chg{fill:"),
+        "the marker's rule rides only with a marked picture"
+    );
+
+    let same = read_with(&kernel, STATE, &[("before", &now)], &cap).expect("drawn");
+    assert!(!same.contains("(was "), "{same}");
+    assert!(
+        same.contains("Nothing changed since the earlier board."),
+        "{same}"
+    );
+
+    let plain = read(&kernel, STATE, &cap).expect("drawn");
+    assert!(
+        !plain.contains("ikd-chg"),
+        "no before, no marker and no rule"
+    );
+
+    let refused = read_with(&kernel, STATE, &[("before", "not turtle at all")], &cap).unwrap_err();
+    assert!(
+        matches!(refused, Error::InvalidArgument { ref name, .. } if name == "before"),
+        "{refused:?}"
+    );
+}
+
+/// `focus=` a space: only it and what it encloses are drawn. A focus that names no space in
+/// the arrangement is refused, never drawn as nothing.
+#[test]
+fn focus_draws_one_space_of_the_arrangement() {
+    let kernel = host(Some(stub(true)));
+    let cap = Capability::root();
+    let whole = read(&kernel, STATE, &cap).expect("drawn");
+    assert!(whole.contains("urn:demo:limit:ok") && whole.contains("urn:demo:breaker:ok"));
+
+    let one = read_with(
+        &kernel,
+        STATE,
+        &[("focus", "urn:iki:space:demo-breaker")],
+        &cap,
+    )
+    .expect("drawn");
+    assert!(one.contains("urn:demo:breaker:ok"), "{one}");
+    assert!(
+        !one.contains("urn:demo:limit:ok"),
+        "only the focused space: {one}"
+    );
+
+    let plain = read_with(
+        &kernel,
+        KERNEL,
+        &[("focus", "urn:iki:space:demo-breaker")],
+        &cap,
+    )
+    .expect("drawn");
+    assert!(plain.contains("urn:demo:breaker:ok") && !plain.contains("urn:demo:limit:ok"));
+
+    let refused =
+        read_with(&kernel, STATE, &[("focus", "urn:iki:space:nowhere")], &cap).unwrap_err();
+    assert!(
+        matches!(refused, Error::InvalidArgument { ref name, .. } if name == "focus"),
+        "{refused:?}"
+    );
+}

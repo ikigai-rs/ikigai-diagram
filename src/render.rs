@@ -13,7 +13,7 @@ use std::fmt::Write as _;
 use ikigai_core::{Door, SpaceKind, Topology, TopologyRule};
 
 use crate::palette::{self, Colors, Kind};
-use crate::state::{span, Board, Governor, GovernorKind, KeyState, Mode, Tone};
+use crate::state::{span, Board, Change, Changes, Governor, GovernorKind, KeyState, Mode, Tone};
 
 /// The picture's width: the bound the layout fits every box and every line into.
 pub const WIDTH: u32 = 960;
@@ -146,7 +146,59 @@ pub fn render_with_state_in(topology: &Topology, board: &Board, colors: Colors) 
     if board.is_empty() {
         return render_in(topology, colors);
     }
-    Layout::with_state(topology, board).colored(colors).svg()
+    Layout::with_state(topology, board, None)
+        .colored(colors)
+        .svg()
+}
+
+/// [`render_with_state_in`], with what changed since `before` marked: each changed key's
+/// row says what it was right after its state word (`OPEN (was CLOSED)`), a new key says
+/// `(new)`, a key that is gone keeps a row that says `GONE`, and the words below the picture
+/// begin with what changed. The marker is a word and a color (`ikd-chg`), never the color
+/// alone. Nothing changed: the picture says so in its words, and marks no row.
+///
+/// ```
+/// use ikigai_core::{Door, MatchKind, SpaceKind, Topology};
+/// use ikigai_diagram::{palette::Colors, render_with_changes_in, render_with_state_in, state::Board};
+///
+/// let space = Topology::new(SpaceKind::EndpointSpace {
+///     doors: vec![Door::new("urn:demo:down", MatchKind::Exact, "down")],
+/// })
+/// .with_id(Some(ikigai_core::space_iri("demo")));
+/// let board = |state: &str, failures: u32| Board::from_turtle(&[
+///     "@prefix thr: <https://ikigai-rs.dev/ns/throttle#> .",
+///     "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .",
+///     "<urn:throttle:state> a thr:StateBoard ; thr:governor <urn:throttle:state:b> .",
+///     "<urn:throttle:state:b> a thr:CircuitBreaker ; thr:name \"b\" ;",
+///     "    thr:governs <urn:iki:space:demo> ; thr:key <urn:throttle:state:b:key:urn:demo:down> .",
+///     "<urn:throttle:state:b:key:urn:demo:down> a thr:Circuit ; thr:target <urn:demo:down> ;",
+///     &format!("    thr:failures \"{failures}\"^^xsd:nonNegativeInteger ; thr:state thr:{state} ."),
+/// ].join("\n")).unwrap();
+///
+/// let svg = render_with_changes_in(&space, &board("Open", 3), &board("Closed", 0), Colors::Auto);
+/// assert!(svg.contains(">OPEN</tspan><tspan class=\"ikd-chg ikd-b\"> (was CLOSED)</tspan>"));
+/// assert!(svg.contains("Changed since the earlier board:"));
+///
+/// // Against itself, nothing is marked, and the words say so.
+/// let same = render_with_changes_in(&space, &board("Open", 3), &board("Open", 3), Colors::Auto);
+/// assert!(!same.contains("(was "));
+/// assert!(same.contains("Nothing changed since the earlier board."));
+/// // With no earlier board, the picture is render_with_state_in's, byte for byte.
+/// assert!(!render_with_state_in(&space, &board("Open", 3), Colors::Auto).contains("ikd-chg"));
+/// ```
+pub fn render_with_changes_in(
+    topology: &Topology,
+    board: &Board,
+    before: &Board,
+    colors: Colors,
+) -> String {
+    if board.is_empty() {
+        return render_in(topology, colors);
+    }
+    let changes = Changes::between(before, board);
+    Layout::with_state(topology, board, Some(changes))
+        .colored(colors)
+        .svg()
 }
 
 /// A laid-out picture: the body, its height, and what the prose summary needs.
@@ -183,6 +235,8 @@ pub(crate) struct Placed {
 pub(crate) struct Status {
     svg: String,
     id: String,
+    /// Whether the picture marks changes, so its stylesheet carries the marker's rule.
+    marked: bool,
 }
 
 impl Layout {
@@ -202,10 +256,15 @@ impl Layout {
     }
 
     /// The arrangement with the board's state drawn over it, and the summary below.
-    pub(crate) fn with_state(topology: &Topology, board: &Board) -> Layout {
+    pub(crate) fn with_state(
+        topology: &Topology,
+        board: &Board,
+        changes: Option<Changes>,
+    ) -> Layout {
         let plain = Layout::of(topology);
+        let marked = changes.is_some();
         let mut canvas = Canvas {
-            overlay: Overlay::of(board),
+            overlay: Overlay::of(board, changes),
             ..Canvas::default()
         };
         let w = WIDTH - 2 * MARGIN;
@@ -218,6 +277,12 @@ impl Layout {
              words below the picture.",
             plural(board.governors().len(), "governor", "governors")
         ));
+        if marked {
+            desc.push_str(
+                " What changed since an earlier board is marked after each state word, and \
+                 stated first in the words.",
+            );
+        }
         Layout {
             body: frag.svg,
             height: top + summary.height + MARGIN,
@@ -226,6 +291,7 @@ impl Layout {
             status: Some(Status {
                 svg: summary.svg,
                 id: format!("ikds-{:016x}", fnv1a(plain.body.as_bytes())),
+                marked,
             }),
             texts: canvas.texts,
             colors: Colors::Auto,
@@ -278,7 +344,7 @@ impl Layout {
             h = self.height,
             title = xml(&self.title),
             desc = xml(&self.desc),
-            style = palette::stylesheet_with_state_in(self.colors),
+            style = palette::stylesheet_with_state_in(self.colors, status.marked),
         );
         out.push_str(&self.body);
         let _ = write!(
@@ -391,6 +457,8 @@ struct Overlay {
     on: BTreeMap<String, Vec<Badge>>,
     /// The governed spaces whose boxes the layer was drawn in.
     drawn: BTreeSet<String>,
+    /// What changed since an earlier board, when the picture marks it.
+    changes: Option<Changes>,
 }
 
 /// One governor's mark on a space: it governs the space, or the space is one of a
@@ -402,7 +470,7 @@ enum Badge {
 }
 
 impl Overlay {
-    fn of(board: &Board) -> Overlay {
+    fn of(board: &Board, changes: Option<Changes>) -> Overlay {
         let mut on: BTreeMap<String, Vec<Badge>> = BTreeMap::new();
         for g in board.governors() {
             if let Some(space) = g.governs() {
@@ -424,6 +492,7 @@ impl Overlay {
         Overlay {
             on,
             drawn: BTreeSet::new(),
+            changes,
         }
     }
 }
@@ -739,11 +808,18 @@ impl Canvas {
                     if let Some(facts) = facts(g) {
                         head.push(("ikd-m", format!(" · {facts}")));
                     }
-                    let rows: Vec<Vec<Run>> = if g.keys().is_empty() {
+                    let changes = self.overlay.changes.as_ref();
+                    let mut rows: Vec<Vec<Run>> = if g.keys().is_empty() {
                         vec![vec![("ikd-m", nothing_yet(g).to_string())]]
                     } else {
-                        g.keys().iter().map(key_runs).collect()
+                        g.keys()
+                            .iter()
+                            .map(|k| marked(key_runs(k), changes.and_then(|c| c.of(g.iri(), k))))
+                            .collect()
                     };
+                    if let Some(c) = changes {
+                        rows.extend(c.gone(g.iri()).iter().map(gone_runs));
+                    }
                     (head, rows)
                 }
                 Badge::Candidate { failover, order } => {
@@ -761,12 +837,18 @@ impl Canvas {
                                 target,
                                 last_candidate: Some(n),
                                 mode,
-                            } if n == order => Some(vec![
-                                mark(mode),
-                                ("ikd-m", " route ".to_string()),
-                                ("ikd-x", target.clone()),
-                                ("ikd-m", " · its last call ended here".to_string()),
-                            ]),
+                            } if n == order => Some(marked(
+                                vec![
+                                    mark(mode),
+                                    ("ikd-m", " route ".to_string()),
+                                    ("ikd-x", target.clone()),
+                                    ("ikd-m", " · its last call ended here".to_string()),
+                                ],
+                                self.overlay
+                                    .changes
+                                    .as_ref()
+                                    .and_then(|c| c.of(failover.iri(), k)),
+                            )),
                             _ => None,
                         })
                         .collect();
@@ -807,6 +889,38 @@ impl Canvas {
         };
         let mut cursor = self.header(&mut svg, x, y, w, head) + PAD / 2;
         let budget = chars(w - 2 * PAD);
+        if let Some(changes) = self.overlay.changes.clone() {
+            let mut paragraphs: Vec<(&'static str, u32, String)> = Vec::new();
+            if changes.is_empty() {
+                paragraphs.push((
+                    "ikd-chg ikd-b",
+                    0,
+                    "Nothing changed since the earlier board.".into(),
+                ));
+            } else {
+                paragraphs.push((
+                    "ikd-chg ikd-b",
+                    0,
+                    "Changed since the earlier board:".into(),
+                ));
+                for sentence in changes.sentences() {
+                    paragraphs.push(("ikd-x", INDENT, sentence.clone()));
+                }
+            }
+            for (class, indent, text) in paragraphs {
+                for line in wrap(&clean(&text), budget - chars(indent)) {
+                    self.text(
+                        &mut svg,
+                        x + PAD + indent,
+                        y + cursor,
+                        w - 2 * PAD - indent,
+                        &[(class, line)],
+                    );
+                    cursor += LINE;
+                }
+            }
+            cursor += PAD / 2;
+        }
         for g in board.governors() {
             let mut paragraphs = vec![(true, governor_sentence(g, &self.overlay.drawn))];
             if g.keys().is_empty() {
@@ -938,6 +1052,43 @@ fn key_runs(key: &KeyState) -> Vec<Run> {
             vec![("ikd-m", format!("a {class} this renderer does not know"))]
         }
     }
+}
+
+/// A key's row with its change marked right after its state word, where a cut never takes
+/// it: `(was CLOSED)` when its state moved, `(changed)` when only its counts did, `(new)` when
+/// the earlier board did not have it.
+fn marked(mut runs: Vec<Run>, change: Option<&Change>) -> Vec<Run> {
+    let Some(change) = change else {
+        return runs;
+    };
+    let now = runs
+        .first()
+        .map(|(_, word)| word.clone())
+        .unwrap_or_default();
+    let note = match change {
+        Change::New => " (new)".to_string(),
+        Change::Was(old) => match old.mode() {
+            Some(m) if m.word().to_uppercase() != now => {
+                format!(" (was {})", m.word().to_uppercase())
+            }
+            _ => " (changed)".to_string(),
+        },
+    };
+    runs.insert(1.min(runs.len()), ("ikd-chg ikd-b", note));
+    runs
+}
+
+/// A row for a key the earlier board had and this one does not.
+fn gone_runs(key: &KeyState) -> Vec<Run> {
+    let mut runs = vec![("ikd-chg ikd-b", "GONE".to_string())];
+    if let Some(m) = key.mode() {
+        runs.push((
+            "ikd-chg ikd-b",
+            format!(" (was {})", m.word().to_uppercase()),
+        ));
+    }
+    runs.extend(key_runs(key).into_iter().skip(1));
+    runs
 }
 
 /// A key in words, for the summary.
@@ -1652,7 +1803,7 @@ mod tests {
             ),
         ] {
             let board = Board::from_turtle(&board).expect("the board parses");
-            let layout = Layout::with_state(&governed, &board);
+            let layout = Layout::with_state(&governed, &board, None);
             assert!(layout.texts.len() > 2);
             for (i, a) in layout.texts.iter().enumerate() {
                 assert!(a.x + a.width <= a.limit, "text overruns its box: {a:?}");
