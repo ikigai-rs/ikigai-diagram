@@ -132,7 +132,9 @@ pub mod palette;
 mod render;
 pub mod state;
 
-pub use render::{render, render_in, render_with_state, render_with_state_in, WIDTH};
+pub use render::{
+    render, render_in, render_with_changes_in, render_with_state, render_with_state_in, WIDTH,
+};
 
 use ikigai_core::{
     space_iri, ArgRef, ArgSpec, AsyncFnEndpoint, Description, EndpointSpace, Error, Exact,
@@ -224,7 +226,8 @@ pub fn kernel() -> AsyncFnEndpoint {
     AsyncFnEndpoint::new("diagram-kernel", |inv| {
         Box::pin(async move {
             let colors = colors(inv)?;
-            Ok(svg(render_in(&kernel_tree(inv).await?, colors)))
+            let tree = focused(kernel_tree(inv).await?, inv)?;
+            Ok(svg(render_in(&tree, colors)))
         })
     })
     .with_description(
@@ -239,6 +242,7 @@ pub fn kernel() -> AsyncFnEndpoint {
             .verb(Verb::Source)
             .verb(Verb::Meta)
             .input(scheme_input())
+            .input(focus_input())
             .requires(CAP_INSPECT)
             .output(SVG),
     )
@@ -250,8 +254,14 @@ pub fn state() -> AsyncFnEndpoint {
     AsyncFnEndpoint::new("diagram-state", |inv| {
         Box::pin(async move {
             let colors = colors(inv)?;
-            let tree = kernel_tree(inv).await?;
-            Ok(svg(render_with_state_in(&tree, &board(inv).await?, colors)))
+            let before = before(inv)?;
+            let tree = focused(kernel_tree(inv).await?, inv)?;
+            Ok(svg(draw_state(
+                &tree,
+                &board(inv).await?,
+                before.as_ref(),
+                colors,
+            )))
         })
     })
     .with_description(
@@ -268,6 +278,8 @@ pub fn state() -> AsyncFnEndpoint {
             .verb(Verb::Source)
             .verb(Verb::Meta)
             .input(scheme_input())
+            .input(focus_input())
+            .input(before_input())
             .requires(CAP_INSPECT)
             .output(SVG),
     )
@@ -280,13 +292,19 @@ pub fn state_arrangement() -> AsyncFnEndpoint {
         Box::pin(async move {
             let of = of(inv)?;
             let colors = colors(inv)?;
+            let before = before(inv)?;
             let (bytes, media) = source_turtle(inv, &of).await?;
             let tree = match std::str::from_utf8(&bytes).map(Topology::from_turtle) {
-                Ok(Ok(tree)) => tree,
+                Ok(Ok(tree)) => focused(tree, inv)?,
                 // Not an arrangement: the same picture saying why, and no state to draw.
                 _ => return Ok(picture(&of, &bytes, &media, colors)),
             };
-            Ok(svg(render_with_state_in(&tree, &board(inv).await?, colors)))
+            Ok(svg(draw_state(
+                &tree,
+                &board(inv).await?,
+                before.as_ref(),
+                colors,
+            )))
         })
     })
     .with_description(
@@ -301,6 +319,8 @@ pub fn state_arrangement() -> AsyncFnEndpoint {
             .verb(Verb::Source)
             .verb(Verb::Meta)
             .input(scheme_input())
+            .input(focus_input())
+            .input(before_input())
             .input(
                 ArgSpec::new("of")
                     .summary(
@@ -451,6 +471,63 @@ fn colors(inv: &Invocation<'_>) -> Result<Colors> {
             detail: format!("`{word}` is not a scheme: auto, light or dark"),
         }),
     }
+}
+
+/// The earlier board a caller passed as `before` (inline `text/turtle` of
+/// `urn:throttle:state`), or `None`. One that does not parse as a board is refused.
+fn before(inv: &Invocation<'_>) -> Result<Option<Board>> {
+    match inv.inline_str("before") {
+        Err(_) => Ok(None),
+        Ok(text) => Board::from_turtle(text)
+            .map(Some)
+            .map_err(|e| Error::InvalidArgument {
+                name: "before".to_string(),
+                detail: format!("not a board as urn:throttle:state writes one: {e}"),
+            }),
+    }
+}
+
+/// The subtree whose space is named `focus`, or the whole tree when there is no `focus`.
+/// A `focus` that names no space in the arrangement is refused, never drawn as nothing.
+fn focused(tree: Topology, inv: &Invocation<'_>) -> Result<Topology> {
+    let Ok(focus) = inv.inline_str("focus") else {
+        return Ok(tree);
+    };
+    fn find(node: &Topology, focus: &str) -> Option<Topology> {
+        if node.id.as_ref().is_some_and(|id| id.as_str() == focus) {
+            return Some(node.clone());
+        }
+        node.children.iter().find_map(|c| find(c, focus))
+    }
+    find(&tree, focus).ok_or_else(|| Error::InvalidArgument {
+        name: "focus".to_string(),
+        detail: format!("`{focus}` names no space in this arrangement"),
+    })
+}
+
+/// The state picture, with what changed since `before` marked when there is one.
+fn draw_state(tree: &Topology, board: &Board, before: Option<&Board>, colors: Colors) -> String {
+    match before {
+        Some(before) => render_with_changes_in(tree, board, before, colors),
+        None => render_with_state_in(tree, board, colors),
+    }
+}
+
+/// The `focus` input: draw only the space with this IRI, and what it encloses.
+fn focus_input() -> ArgSpec {
+    ArgSpec::new("focus").optional().class(XSD_ANY_URI).summary(
+        "the IRI of one space in the arrangement (a governed space, say): draw only it \
+             and what it encloses, legible where the whole arrangement is too wide",
+    )
+}
+
+/// The `before` input: an earlier board, to mark what changed since.
+fn before_input() -> ArgSpec {
+    ArgSpec::new("before").optional().class(XSD_STRING).summary(
+        "an earlier board, as text/turtle of urn:throttle:state: each key that differs is \
+             marked after its state word (was OPEN, new, GONE), and the words begin with what \
+             changed",
+    )
 }
 
 /// The `scheme` input every picture declares.

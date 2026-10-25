@@ -292,13 +292,33 @@ pub(crate) fn stylesheet_in(colors: Colors) -> String {
     )
 }
 
+/// The color of the CHANGED marker (`ikd-chg`) in the light scheme: what a state was, or
+/// `GONE`, `(new)`, `(changed)`, beside a key's state word when a picture marks what changed
+/// since an earlier board. Its own constant rather than a field of [`StateScheme`], whose
+/// fields are public.
+pub const LIGHT_CHANGED: &str = "#8250df";
+
+/// The CHANGED marker's color in the dark scheme.
+pub const DARK_CHANGED: &str = "#ab7df8";
+
 /// The `<style>` body of a picture WITH a state layer: [`stylesheet_in`] plus the state
-/// tokens, carried the same way.
-pub(crate) fn stylesheet_with_state_in(colors: Colors) -> String {
+/// tokens, carried the same way, and the CHANGED marker's rule when `marked` (only then, so a
+/// picture that marks nothing keeps its bytes).
+pub(crate) fn stylesheet_with_state_in(colors: Colors, marked: bool) -> String {
+    let changed = |color: &str| {
+        if marked {
+            format!(".ikd-chg{{fill:{color}}}")
+        } else {
+            String::new()
+        }
+    };
     format!(
         "{base}{state}",
         base = stylesheet_in(colors),
-        state = colors.tokens(state_rules(&LIGHT_STATE), state_rules(&DARK_STATE)),
+        state = colors.tokens(
+            format!("{}{}", state_rules(&LIGHT_STATE), changed(LIGHT_CHANGED)),
+            format!("{}{}", state_rules(&DARK_STATE), changed(DARK_CHANGED)),
+        ),
     )
 }
 
