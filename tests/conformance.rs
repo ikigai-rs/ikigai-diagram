@@ -24,13 +24,20 @@
 //! own), so it is described like one: a kebab-case id, its verbs and its face. It
 //! answers a constant, so it is declared `pure` (since conformance 0.5, a cacheable
 //! answer with no thread but its own name must say so).
+//!
+//! - **`body_space`, the kernel's own root** — `BODIES` (conformance 0.12) compares each
+//!   endpoint's `invoke` with its `invoke_body`, which only the module space can show
+//!   (both kernel calls dispatch `invoke_body`), so the suite gets the very `Arc` the
+//!   kernel was built from. No argument here is declared `reads_body` (every `of` is
+//!   read through the kernel, never streamed), so `BODY-INPUTS` has nothing to probe and
+//!   needs no content store. `nothing_unprobed` keeps this wiring from falling off.
 
 mod common;
 
 use std::sync::Arc;
 
 use common::committed;
-use ikigai_conformance::{Fixture, Suite};
+use ikigai_conformance::{Expected, Fixture, Suite};
 use ikigai_core::{
     Description, EndpointSpace, Exact, Fallback, FnEndpoint, Kernel, ReprType, Representation,
     Space, Verb,
@@ -69,10 +76,11 @@ fn fixture_space() -> EndpointSpace {
 
 #[test]
 fn conforms() {
-    let kernel = Kernel::new(Arc::new(Fallback::new(vec![
+    let root = Arc::new(Fallback::new(vec![
         Arc::new(ikigai_diagram::space()) as Arc<dyn Space>,
         Arc::new(fixture_space()),
-    ])));
+    ]));
+    let kernel = Kernel::new(root.clone());
 
     let suite = Suite::new()
         .cacheable("diagram-arrangement")
@@ -82,11 +90,12 @@ fn conforms() {
         .pure(FIXTURE_ID)
         .fixture(Fixture::new("diagram-arrangement", Verb::Source).arg("of", FIXTURE_IRI))
         .fixture(Fixture::new("diagram-state-arrangement", Verb::Source).arg("of", FIXTURE_IRI))
-        .self_named_space("diagram", ikigai_diagram::space);
+        .self_named_space("diagram", ikigai_diagram::space)
+        .body_space(root);
 
     let report = suite.run_blocking(&kernel);
     println!("{report}"); // shown with --nocapture: what the walk probed and did not
-    assert!(report.is_clean(), "{report}");
+    report.assert_clean_with(&Expected::new().nothing_unprobed());
     assert_eq!(
         ikigai_core::space_iri("diagram").as_str(),
         ikigai_diagram::SPACE_ID
