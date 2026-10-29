@@ -1,6 +1,6 @@
 [package]
 name = "ikigai-diagram"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A kernel's arrangement as a picture: urn:diagram:* renders the resolution topology (urn:kernel:topology, or any declaration of a space) as an accessible, deterministic SVG of nested boxes."
@@ -18,8 +18,9 @@ ikigai-core = { version = "0.2.0", features = ["declare"] }
 
 # The ecosystem's ONE escaping module (`ikigai_fn::html`, ledger #1813): every piece of
 # text the renderer writes into the SVG goes through it. ⚠ Under 0.x caret rules this is
-# also a CEILING (<0.8.0).
-ikigai-fn = "0.7.0"
+# also a CEILING (<0.9.0).
+# 0.8.0 makes unquoted <iri> compose arguments references (ledger #2618).
+ikigai-fn = "0.8.0"
 
 # The state overlay reads `urn:throttle:state`'s Turtle face. The same parser core's
 # `declare` feature already links (so no new crate enters the graph), at core's own
