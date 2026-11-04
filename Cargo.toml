@@ -1,6 +1,6 @@
 [package]
 name = "ikigai-diagram"
-version = "0.3.2"
+version = "0.4.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A kernel's arrangement as a picture: urn:diagram:* renders the resolution topology (urn:kernel:topology, or any declaration of a space) as an accessible, deterministic SVG of nested boxes."
@@ -12,15 +12,14 @@ keywords = ["ikigai", "roc", "svg", "diagram", "module"]
 categories = ["visualization", "wasm"]
 
 [dependencies]
-# 0.2.0 is the streams release (ledger #2261). The old 0.1 pin meant
-# <0.2.0 under 0.x caret rules, so hosts and modules must move together.
-ikigai-core = { version = "0.2.0", features = ["declare"] }
+# Core 0.3.0 scopes held content to its deliverer (ledger #2965).
+# Hosts, modules, and test dependencies must move together to share core types.
+ikigai-core = { version = "0.3.0", features = ["declare"] }
 
 # The ecosystem's ONE escaping module (`ikigai_fn::html`, ledger #1813): every piece of
 # text the renderer writes into the SVG goes through it. ⚠ Under 0.x caret rules this is
-# also a CEILING (<0.10.0).
-# 0.9.0 adds strict percent decoding and retains 0.8's compose reference arguments.
-ikigai-fn = "0.9.0"
+# also a CEILING (<0.11.0). 0.10.0 shares core 0.3 types.
+ikigai-fn = "0.10.0"
 
 # The state overlay reads `urn:throttle:state`'s Turtle face. The same parser core's
 # `declare` feature already links (so no new crate enters the graph), at core's own
@@ -30,18 +29,18 @@ oxrdf = "0.3.0"
 
 [dev-dependencies]
 futures = "0.3"
-# The module recipe as one test (`tests/conformance.rs`). 0.12.0 enables
-# BODIES and BODY-INPUTS by default; under 0.x caret rules this pin means <0.13.0.
-ikigai-conformance = "0.12.0"
+# The module recipe as one test (`tests/conformance.rs`). 0.14.0 shares core 0.3
+# types; under 0.x caret rules this pin means <0.15.0.
+ikigai-conformance = "0.14.0"
 # The contrast floor this ecosystem enforces (`tests/contrast.rs`): `ratio` and the
 # thresholds, from the crate that owns them, rather than a second copy of the WCAG
 # math. A dev-dependency only — the palette is constant, so checking it is a test,
 # and the library itself pays nothing for it.
-ikigai-a11y = "0.4.0"
+ikigai-a11y = "0.6.0"
 # ★ The REPL engine, for `tests/pipeline.rs`: whether `source urn:diagram:arrangement
 # urn:kernel:topology` lands the value in `of` is decided by the engine's routing
 # rule, which no kernel-level test can see.
-ikigai-engine = "0.2.0"
+ikigai-engine = "0.3.0"
 # The engine reads each contract as `Meta as=application/json`; the test kernel must
 # answer it, or the engine fails open and the pipeline tests prove nothing.
 serde_json = "1"
