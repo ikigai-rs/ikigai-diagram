@@ -40,7 +40,8 @@ ikigai-a11y = "0.6.0"
 # ★ The REPL engine, for `tests/pipeline.rs`: whether `source urn:diagram:arrangement
 # urn:kernel:topology` lands the value in `of` is decided by the engine's routing
 # rule, which no kernel-level test can see.
-ikigai-engine = "0.3.0"
+# 0.4.0 adds Engine::with_scope; this caret pin admits the 0.4 release line.
+ikigai-engine = "0.4.0"
 # The engine reads each contract as `Meta as=application/json`; the test kernel must
 # answer it, or the engine fails open and the pipeline tests prove nothing.
 serde_json = "1"
