@@ -250,6 +250,43 @@ fn the_same_tree_is_the_same_bytes_through_the_kernel() {
     assert!(render(&a) == render(&b), "two kernels, one picture");
 }
 
+#[test]
+fn focus_reaches_spaces_inside_confined_doors() {
+    let target = Topology::new(SpaceKind::EndpointSpace {
+        doors: vec![Door::new("urn:inside", MatchKind::Exact, "inside")],
+    })
+    .with_id(Some(iri("urn:space:inside")));
+    let corridor = Topology::new(SpaceKind::Chain { severed: true })
+        .with_id(Some(iri("urn:space:corridor")))
+        .child(target.clone());
+    let tree = Topology::new(SpaceKind::EndpointSpace {
+        doors: vec![
+            Door::new("urn:outside", MatchKind::Exact, "outside").confined_to(corridor.clone())
+        ],
+    });
+    let kernel = kernel_with(EndpointSpace::new().bind(
+        Exact::new("urn:fixture:confined"),
+        serving("fixture-confined", tree.to_turtle()),
+    ));
+    let whole = text(&draw(&kernel, "urn:fixture:confined").unwrap());
+    assert!(whole.contains("urn:space:corridor") && whole.contains("urn:space:inside"));
+    for focused in [corridor, target] {
+        let request = Request::new(
+            ikigai_core::Verb::Source,
+            iri(ikigai_diagram::STATE_ARRANGEMENT),
+        )
+        .with_arg("of", ArgRef::Inline(b"urn:fixture:confined".to_vec()))
+        .with_arg(
+            "focus",
+            ArgRef::Inline(focused.id.as_ref().unwrap().as_str().as_bytes().to_vec()),
+        );
+        // No state grant: the state endpoint draws exactly the focused arrangement.
+        let picture = block_on(kernel.issue(request, &Capability::scoped(Vec::<String>::new())))
+            .expect("a space drawn in the whole arrangement can be focused");
+        assert_eq!(text(&picture), render(&focused));
+    }
+}
+
 /// `scheme=` (Brian, 2026-10-24): a page with a theme of its own asks for the colors it is
 /// in, so the picture matches the page rather than the viewer's system setting. `auto` (the
 /// default) is the picture as before, byte for byte; `light` and `dark` carry one scheme and
@@ -277,5 +314,24 @@ fn a_picture_takes_the_colors_its_page_asks_for() {
     assert!(
         matches!(refused, Error::InvalidArgument { ref name, .. } if name == "scheme"),
         "{refused:?}"
+    );
+}
+
+#[test]
+fn present_optional_arguments_must_be_valid_text() {
+    let kernel = kernel_with(EndpointSpace::new());
+    let mut accepted = Vec::new();
+    for name in ["scheme", "focus", "before"] {
+        let request = Request::new(ikigai_core::Verb::Source, iri(ikigai_diagram::STATE))
+            .with_arg(name, ArgRef::Inline(vec![0xff]));
+        let result = block_on(kernel.issue(request, &Capability::scoped([CAP_INSPECT])));
+        if !matches!(result, Err(Error::InvalidArgument { name: ref actual, .. }) if actual == name)
+        {
+            accepted.push(name);
+        }
+    }
+    assert!(
+        accepted.is_empty(),
+        "invalid UTF-8 was not refused for {accepted:?}"
     );
 }
