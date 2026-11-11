@@ -121,3 +121,31 @@ fn the_dynamic_picture_is_stable() {
     assert_eq!(svg, ikigai_diagram::render(&tree), "deterministic");
     matches("golden/dynamic.svg", &svg);
 }
+
+#[test]
+fn xml_edge_cases_are_a_stable_picture() {
+    use ikigai_core::{Door, MatchKind, SpaceKind};
+    let tree = Topology::new(SpaceKind::EndpointSpace {
+        doors: vec![
+            Door::new("<&\"']]>", MatchKind::Exact, "café 日本 😀"),
+            Door::new(
+                "controls:\0\t\n\r\u{1f}\u{7f}\u{85}",
+                MatchKind::Prefix,
+                "controls",
+            ),
+            Door::new(
+                "noncharacters:\u{fffe}\u{ffff}",
+                MatchKind::Custom,
+                "replaced",
+            ),
+            Door::new(
+                "long".repeat(300),
+                MatchKind::Template,
+                "endpoint".repeat(80),
+            ),
+        ],
+    });
+    let svg = ikigai_diagram::render(&tree);
+    assert_eq!(svg, ikigai_diagram::render(&tree));
+    matches("golden/xml-edge-cases.svg", &svg);
+}

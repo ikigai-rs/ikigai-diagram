@@ -464,9 +464,9 @@ fn picture(of: &Iri, bytes: &[u8], media: &str, colors: Colors) -> Representatio
 /// The `scheme` a caller asked for: `auto` (the default: both schemes, chosen by the
 /// viewer's system setting), `light` or `dark` ([`Colors`]). Anything else is refused.
 fn colors(inv: &Invocation<'_>) -> Result<Colors> {
-    match inv.inline_str("scheme") {
-        Err(_) => Ok(Colors::Auto),
-        Ok(word) => Colors::parse(word).ok_or_else(|| Error::InvalidArgument {
+    match optional_str(inv, "scheme")? {
+        None => Ok(Colors::Auto),
+        Some(word) => Colors::parse(word).ok_or_else(|| Error::InvalidArgument {
             name: "scheme".to_string(),
             detail: format!("`{word}` is not a scheme: auto, light or dark"),
         }),
@@ -476,9 +476,9 @@ fn colors(inv: &Invocation<'_>) -> Result<Colors> {
 /// The earlier board a caller passed as `before` (inline `text/turtle` of
 /// `urn:throttle:state`), or `None`. One that does not parse as a board is refused.
 fn before(inv: &Invocation<'_>) -> Result<Option<Board>> {
-    match inv.inline_str("before") {
-        Err(_) => Ok(None),
-        Ok(text) => Board::from_turtle(text)
+    match optional_str(inv, "before")? {
+        None => Ok(None),
+        Some(text) => Board::from_turtle(text)
             .map(Some)
             .map_err(|e| Error::InvalidArgument {
                 name: "before".to_string(),
@@ -487,15 +487,36 @@ fn before(inv: &Invocation<'_>) -> Result<Option<Board>> {
     }
 }
 
+/// Only absence selects an optional input's default. A supplied value that is
+/// not inline UTF-8 remains an argument error, rather than silently disappearing.
+fn optional_str<'a>(inv: &'a Invocation<'_>, name: &str) -> Result<Option<&'a str>> {
+    match inv.inline_str(name) {
+        Ok(text) => Ok(Some(text)),
+        Err(Error::MissingArgument(_)) => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
 /// The subtree whose space is named `focus`, or the whole tree when there is no `focus`.
 /// A `focus` that names no space in the arrangement is refused, never drawn as nothing.
 fn focused(tree: Topology, inv: &Invocation<'_>) -> Result<Topology> {
-    let Ok(focus) = inv.inline_str("focus") else {
+    let Some(focus) = optional_str(inv, "focus")? else {
         return Ok(tree);
     };
     fn find(node: &Topology, focus: &str) -> Option<Topology> {
         if node.id.as_ref().is_some_and(|id| id.as_str() == focus) {
             return Some(node.clone());
+        }
+        // Confined corridors are drawn beneath their doors, before ordinary
+        // children. Search them in that same order, including nested confinement.
+        if let ikigai_core::SpaceKind::EndpointSpace { doors } = &node.kind {
+            if let Some(found) = doors
+                .iter()
+                .filter_map(|door| door.confined.as_deref())
+                .find_map(|corridor| find(corridor, focus))
+            {
+                return Some(found);
+            }
         }
         node.children.iter().find_map(|c| find(c, focus))
     }

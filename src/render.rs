@@ -1571,11 +1571,18 @@ fn fit(runs: &[Run], budget: usize) -> (Vec<Run>, bool) {
     (out, false)
 }
 
-/// Replace what XML 1.0 cannot carry at all (C0 controls, even escaped) with
-/// U+FFFD, so a pattern with a newline in it is still one well-formed line.
+/// Replace XML-forbidden scalars and controls with U+FFFD. XML 1.0's Char
+/// production excludes U+FFFE/U+FFFF as well as C0 controls; replacing the other
+/// controls too keeps each label on one visible line.
 fn clean(s: &str) -> String {
     s.chars()
-        .map(|c| if c.is_control() { '\u{fffd}' } else { c })
+        .map(|c| {
+            if c.is_control() || matches!(c, '\u{fffe}' | '\u{ffff}') {
+                '\u{fffd}'
+            } else {
+                c
+            }
+        })
         .collect()
 }
 
@@ -1769,6 +1776,44 @@ mod tests {
     }
 
     #[test]
+    fn empty_single_and_many_siblings_keep_every_door_in_order() {
+        let empty = Topology::new(SpaceKind::EndpointSpace { doors: vec![] });
+        let svg = render(&empty);
+        assert!(svg.contains("0 doors across 1 endpoint space"));
+        assert!(svg.contains(">no doors</tspan>"));
+
+        for n in [1, 300] {
+            let mut tree = Topology::new(SpaceKind::Fallback);
+            for i in 0..n {
+                tree = tree.child(Topology::new(SpaceKind::EndpointSpace {
+                    doors: vec![Door::new(
+                        format!("urn:door:{i}"),
+                        MatchKind::Exact,
+                        format!("endpoint-{i}"),
+                    )],
+                }));
+            }
+            assert_legible(&tree);
+            let svg = render(&tree);
+            let mut previous = 0;
+            for i in 0..n {
+                for text in [format!("urn:door:{i}"), format!("endpoint-{i}")] {
+                    let label = format!(">{text}</tspan>");
+                    assert_eq!(svg.matches(&label).count(), 1, "{text} drawn once");
+                    let at = svg.find(&label).unwrap();
+                    assert!(at > previous, "sibling and door order is preserved");
+                    previous = at;
+                }
+            }
+            assert!(svg.contains(&format!(
+                "{n} {} across {n} endpoint space",
+                if n == 1 { "door" } else { "doors" }
+            )));
+            assert_eq!(svg, render(&tree));
+        }
+    }
+
+    #[test]
     fn the_every_kind_fixture_is_legible() {
         let turtle = include_str!("../tests/fixtures/every-kind.ttl");
         assert_legible(&Topology::from_turtle(turtle).expect("the fixture parses"));
@@ -1874,9 +1919,28 @@ mod tests {
         assert_eq!(xml("a<b>&\"c'\n"), "a&lt;b&gt;&amp;&quot;c&#39;\u{fffd}");
     }
 
+    #[test]
+    fn xml_forbidden_noncharacters_cannot_break_a_picture() {
+        // XML 1.0 Char excludes U+FFFE and U+FFFF even though Rust accepts them
+        // as scalar values and they are not control characters.
+        let tree = Topology::new(SpaceKind::EndpointSpace {
+            doors: vec![Door::new(
+                "urn:test:\u{fffe}",
+                MatchKind::Exact,
+                "end\u{ffff}",
+            )],
+        });
+        let svg = render(&tree);
+        assert!(!svg.contains(['\u{fffe}', '\u{ffff}']));
+        assert!(svg.contains("urn:test:\u{fffd}"));
+        assert!(svg.contains("end\u{fffd}"));
+        // Supplementary-plane noncharacters are legal XML 1.0 characters.
+        assert_eq!(xml("\u{1fffe}\u{10ffff}"), "\u{1fffe}\u{10ffff}");
+    }
+
     /// The shared escaper and `xml` differ in exactly two ways, over the ikigai-fn vectors'
     /// escape inputs and this crate's own: `'` is `&#39;` not `&apos;`, and `xml` also
-    /// replaces tab, LF, CR, DEL and C1 controls (via `clean`). Nothing else.
+    /// replaces controls and XML-forbidden noncharacters (via `clean`).
     #[test]
     fn xml_is_the_shared_escaper_after_clean() {
         use ikigai_fn::html::{attr, html_text};
@@ -1905,6 +1969,7 @@ mod tests {
             "a\r\nb",
             "c1\u{85}\u{9f}x",
             "\u{fffd} already",
+            "\u{fffe}\u{ffff}",
         ];
         for i in inputs {
             assert_eq!(attr(i), html_text(i));
@@ -1912,9 +1977,10 @@ mod tests {
             assert_eq!(ours, html_text(&clean(i)), "{i:?}");
             let shared = html_text(i);
             if ours != shared {
-                // Only a control character that `clean` replaces may explain it.
+                // Only a character that `clean` replaces may explain it.
                 assert!(
-                    i.chars().any(char::is_control),
+                    i.chars()
+                        .any(|c| c.is_control() || matches!(c, '\u{fffe}' | '\u{ffff}')),
                     "{i:?}: {ours:?} vs {shared:?}"
                 );
                 assert!(!ours.contains(|c: char| c.is_control()), "{ours:?}");

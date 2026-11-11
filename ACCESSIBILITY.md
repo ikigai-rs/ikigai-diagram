@@ -73,6 +73,10 @@ as an `<img>` with its own `alt` text), and the host's page is the host's.
   the `<desc>`; `tests/golden.rs` holds pictures byte for byte, so any change to the markup
   shows up as a diff. All ran and passed on main at `43d3e67` on 2026-10-15 (31 tests and one
   doctest; one test that only prints a picture is ignored). CI runs them on every pull request.
+- The renderer tests also cover empty endpoint spaces and ordered sibling spaces. The
+  `xml-edge-cases.svg` golden picture covers XML metacharacters, controls, U+FFFE/U+FFFF,
+  non-ASCII labels and long strings. XML-forbidden characters are replaced with U+FFFD before
+  the shared HTML escaping helpers run; this is not a browser or assistive technology test.
 - **No screen reader, magnifier or other assistive technology has been used on any picture**, and
   no accessibility checker (axe or similar) has been run against one. One state picture
   (`tests/golden/state-every-state.svg`) was looked at in a browser in the light scheme only, on
