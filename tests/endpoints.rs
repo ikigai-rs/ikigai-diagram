@@ -213,7 +213,7 @@ fn the_kernel_picture_is_the_callers_own_topology() {
     let refused = block_on(kernel.issue(request, &Capability::scoped(Vec::<String>::new())))
         .expect_err("topology is inspect-gated");
     assert!(
-        matches!(refused, Error::Denied(ref m) if m.contains(CAP_INSPECT)),
+        matches!(refused, Error::Denied(ref m) if m.message().contains(CAP_INSPECT)),
         "{refused:?}"
     );
 }
