@@ -1,6 +1,6 @@
 [package]
 name = "ikigai-diagram"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A kernel's arrangement as a picture: urn:diagram:* renders the resolution topology (urn:kernel:topology, or any declaration of a space) as an accessible, deterministic SVG of nested boxes."
@@ -12,14 +12,14 @@ keywords = ["ikigai", "roc", "svg", "diagram", "module"]
 categories = ["visualization", "wasm"]
 
 [dependencies]
-# Core 0.3.0 scopes held content to its deliverer (ledger #2965).
+# core 0.4.0 (scope opacity, structured denials; the cascade, epic #3893).
 # Hosts, modules, and test dependencies must move together to share core types.
-ikigai-core = { version = "0.3.0", features = ["declare"] }
+ikigai-core = { version = "0.4.0", features = ["declare"] }
 
 # The ecosystem's ONE escaping module (`ikigai_fn::html`, ledger #1813): every piece of
 # text the renderer writes into the SVG goes through it. ⚠ Under 0.x caret rules this is
-# also a CEILING (<0.11.0). 0.10.0 shares core 0.3 types.
-ikigai-fn = "0.10.0"
+# also a CEILING (<0.13.0). 0.12.0 shares core 0.4 types.
+ikigai-fn = "0.12.0"
 
 # The state overlay reads `urn:throttle:state`'s Turtle face. The same parser core's
 # `declare` feature already links (so no new crate enters the graph), at core's own
@@ -29,19 +29,16 @@ oxrdf = "0.3.0"
 
 [dev-dependencies]
 futures = "0.3"
-# The module recipe as one test (`tests/conformance.rs`). 0.14.0 shares core 0.3
-# types; under 0.x caret rules this pin means <0.15.0.
-ikigai-conformance = "0.14.0"
+# The module recipe as one test (`tests/conformance.rs`). 0.15.0 shares core 0.4
+# types; under 0.x caret rules this pin means <0.16.0.
+ikigai-conformance = "0.15.0"
 # The contrast floor this ecosystem enforces (`tests/contrast.rs`): `ratio` and the
 # thresholds, from the crate that owns them, rather than a second copy of the WCAG
 # math. A dev-dependency only — the palette is constant, so checking it is a test,
 # and the library itself pays nothing for it.
-ikigai-a11y = "0.6.0"
-# ★ The REPL engine, for `tests/pipeline.rs`: whether `source urn:diagram:arrangement
-# urn:kernel:topology` lands the value in `of` is decided by the engine's routing
-# rule, which no kernel-level test can see.
-# 0.4.0 adds Engine::with_scope; this caret pin admits the 0.4 release line.
-ikigai-engine = "0.4.0"
-# The engine reads each contract as `Meta as=application/json`; the test kernel must
-# answer it, or the engine fails open and the pipeline tests prove nothing.
-serde_json = "1"
+ikigai-a11y = "0.7.0"
+# The engine pipeline tests (`tests/pipeline.rs`) are dropped for now, as ikigai-fn
+# did: no ikigai-engine release is on core 0.4 yet (wave 4 of the core 0.4.0 cascade),
+# and a test-only core 0.3 alias cannot work, since those tests put this crate's core 0.4
+# `Space` inside the engine's core 0.3 `Kernel`. Restore them from git history, with
+# the `ikigai-engine` and `serde_json` dev-dependencies, when the engine moves in wave 4.
