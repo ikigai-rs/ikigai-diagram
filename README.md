@@ -133,8 +133,10 @@ ikigai-throttle; its `thr:` namespace is one constant, `state::THR`.
   file is fixed. Failing to *read* `of` is still an error.
 - **Deterministic.** The same tree renders the same bytes: integer layout over a
   fixed monospace advance, no floats, no clock.
-- **Accessible.** The root `<svg>` is `role="img"` with a `<title>` and a `<desc>`
-  that states the arrangement in words, the names its spaces claim included; every label is real `<text>`; every color
+- **Accessible.** The root `<svg>` is `role="img"`, named by a short `<title>` and
+  described by a `<desc>` that summarizes the arrangement and then states everything
+  drawn, every door's pattern, match kind and endpoint included, in reading order;
+  every label is real `<text>`; every color
   is a token with a dark scheme under `prefers-color-scheme`, and every pair the
   picture draws meets the WCAG floor `ikigai-a11y` enforces (4.5:1 for text, 3:1
   for outlines), checked by `tests/contrast.rs`.
@@ -149,7 +151,8 @@ be chosen for any Turtle at all, and most Turtle is not an arrangement.
 ## Accessibility
 
 [ACCESSIBILITY.md](ACCESSIBILITY.md) says what makes the picture accessible, how that is tested,
-what is not (the `<desc>` summarizes rather than listing every door, among other things), and how
+what is not (the `<desc>` is one flat string a screen reader cannot move through row by row,
+among other things), and how
 to report a barrier.
 
 ## License
