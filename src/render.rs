@@ -1431,7 +1431,10 @@ impl Counts {
     fn describe(&self, root: &Topology) -> String {
         let n = root.children.len();
         let mut out = match &root.kind {
-            SpaceKind::Chain { severed: false } if n <= 1 => {
+            SpaceKind::Chain { severed: false } if n == 0 => {
+                "The resolution chain is empty.".to_string()
+            }
+            SpaceKind::Chain { severed: false } if n == 1 => {
                 "The resolution chain one request sees: the root alone.".to_string()
             }
             SpaceKind::Chain { severed: false } => format!(
