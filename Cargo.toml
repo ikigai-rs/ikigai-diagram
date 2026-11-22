@@ -37,8 +37,7 @@ ikigai-conformance = "0.15.0"
 # math. A dev-dependency only — the palette is constant, so checking it is a test,
 # and the library itself pays nothing for it.
 ikigai-a11y = "0.7.0"
-# The engine pipeline tests (`tests/pipeline.rs`) are dropped for now, as ikigai-fn
-# did: no ikigai-engine release is on core 0.4 yet (wave 4 of the core 0.4.0 cascade),
-# and a test-only core 0.3 alias cannot work, since those tests put this crate's core 0.4
-# `Space` inside the engine's core 0.3 `Kernel`. Restore them from git history, with
-# the `ikigai-engine` and `serde_json` dev-dependencies, when the engine moves in wave 4.
+# Core 0.4 cascade restore (ledger #3935): engine-level routing tests.
+ikigai-engine = "0.6.0"
+# The fixture kernel answers the engine's contract requests as JSON.
+serde_json = "1"
