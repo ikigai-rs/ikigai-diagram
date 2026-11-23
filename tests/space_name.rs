@@ -25,6 +25,12 @@ fn desc(svg: &str) -> &str {
     &svg[open..end]
 }
 
+/// What the picture draws: everything after the `<desc>`, which states it all again
+/// in words.
+fn drawn(svg: &str) -> &str {
+    &svg[svg.find("</desc>").expect("the </desc>")..]
+}
+
 fn pictures() -> Vec<(&'static str, String)> {
     let text = committed("fixtures/named-module.ttl").expect("the fixture");
     let fixture = Topology::from_turtle(&text).expect("it parses");
@@ -55,7 +61,8 @@ fn the_space_names_itself_in_the_header_band_and_the_desc() {
 
 #[test]
 fn a_named_space_reached_twice_is_drawn_once_and_referenced_after() {
-    for (what, svg) in pictures() {
+    for (what, picture) in pictures() {
+        let svg = drawn(&picture);
         // Both doors drawn exactly once: each door row carries one tooltip.
         for door in ["diagram-arrangement", "diagram-kernel"] {
             let rows = svg.matches(&format!("is answered by {door}")).count();
@@ -77,13 +84,16 @@ fn a_named_space_reached_twice_is_drawn_once_and_referenced_after() {
             drawn < referred,
             "{what}: the reference comes after the drawing"
         );
-        // And the desc names it once: it states the spaces shown, not each box.
-        assert_eq!(
-            desc(&svg).matches(SPACE_ID).count(),
-            1,
-            "{what}: {}",
-            desc(&svg)
-        );
+        // And the desc's summary names it once: it states the spaces shown, not each
+        // box. Its reading-order listing then follows the boxes: the space where it is
+        // drawn, and again where it is referred to.
+        let desc = desc(&picture);
+        let (summary, listing) = desc
+            .split_once(" Everything drawn, in reading order: ")
+            .expect("a summary, then the listing");
+        assert_eq!(summary.matches(SPACE_ID).count(), 1, "{what}: {desc}");
+        assert_eq!(listing.matches(SPACE_ID).count(), 2, "{what}: {desc}");
+        assert_eq!(listing.matches(reference).count(), 1, "{what}: {desc}");
     }
 }
 

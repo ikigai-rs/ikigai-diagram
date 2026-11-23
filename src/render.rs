@@ -45,10 +45,13 @@ const ELLIPSIS: char = '…';
 /// Render an arrangement as a standalone SVG document.
 ///
 /// Deterministic: the same tree renders byte-identical SVG. Accessible: the root
-/// `<svg>` is `role="img"` with a `<title>` and a `<desc>` that states the
-/// arrangement in words (ending with the names its spaces claim, in the order they
-/// are drawn, when any below the outermost claims one), every label is real
-/// `<text>`, and every color is a token from [`palette`] (light, and dark under
+/// `<svg>` is `role="img"`, named by its short `<title>` (`aria-labelledby`) and
+/// described by its `<desc>` (`aria-describedby`). The `<desc>` opens with a summary
+/// (what the outermost space is, how many of each kind, the holes, and the names its
+/// spaces claim, in the order they are drawn), then states everything drawn in
+/// reading order: each box as a numbered space (`Space 1.2`), each door with its
+/// pattern, match kind and endpoint, each rule and row, untruncated. Every label is
+/// real `<text>`, and every color is a token from [`palette`] (light, and dark under
 /// `prefers-color-scheme`).
 ///
 /// ```
@@ -68,7 +71,13 @@ const ELLIPSIS: char = '…';
 /// let host = Topology::new(SpaceKind::Fallback).child(named);
 /// let svg = ikigai_diagram::render(&host);
 /// assert!(svg.contains("<tspan class=\"ikd-m\">urn:iki:space:hello</tspan></text>"));
-/// assert!(svg.contains("Named spaces, in the order drawn: urn:iki:space:hello.</desc>"));
+/// assert!(svg.contains("Named spaces, in the order drawn: urn:iki:space:hello."));
+///
+/// // Then everything drawn, in reading order: each space, then each door.
+/// assert!(svg.contains(
+///     "Space 1.1, layer 1: Endpoints, 1 door tried in order; the first match wins; \
+///      named urn:iki:space:hello. Door 1: urn:hello (exact) is answered by hello.</desc>"
+/// ));
 /// ```
 pub fn render(topology: &Topology) -> String {
     render_in(topology, Colors::Auto)
@@ -248,7 +257,7 @@ impl Layout {
             body: frag.svg,
             height,
             title: title(topology),
-            desc: canvas.counts.describe(topology),
+            desc: canvas.counts.describe(topology) + &canvas.listing(),
             status: None,
             texts: canvas.texts,
             colors: Colors::Auto,
@@ -283,6 +292,7 @@ impl Layout {
                  stated first in the words.",
             );
         }
+        desc.push_str(&canvas.listing());
         Layout {
             body: frag.svg,
             height: top + summary.height + MARGIN,
@@ -313,7 +323,8 @@ impl Layout {
         let _ = write!(
             out,
             "<svg xmlns=\"http://www.w3.org/2000/svg\" xml:lang=\"en\" lang=\"en\" width=\"{WIDTH}\" height=\"{h}\" \
-             viewBox=\"0 0 {WIDTH} {h}\" role=\"img\" aria-labelledby=\"{id}-title {id}-desc\" \
+             viewBox=\"0 0 {WIDTH} {h}\" role=\"img\" aria-labelledby=\"{id}-title\" \
+             aria-describedby=\"{id}-desc\" \
              class=\"ikd\">\n<title id=\"{id}-title\">{title}</title>\n\
              <desc id=\"{id}-desc\">{desc}</desc>\n<style>{style}</style>\n\
              <rect class=\"ikd-bg\" width=\"{WIDTH}\" height=\"{h}\"/>\n",
@@ -340,7 +351,7 @@ impl Layout {
              class=\"ikd\">\n<title id=\"{id}-title\">{title}</title>\n\
              <desc id=\"{id}-desc\">{desc}</desc>\n<style>{style}</style>\n\
              <rect class=\"ikd-bg\" width=\"{WIDTH}\" height=\"{h}\"/>\n\
-             <g role=\"img\" aria-labelledby=\"{id}-title {id}-desc\">\n",
+             <g role=\"img\" aria-labelledby=\"{id}-title\" aria-describedby=\"{id}-desc\">\n",
             h = self.height,
             title = xml(&self.title),
             desc = xml(&self.desc),
@@ -448,6 +459,15 @@ struct Canvas {
     texts: Vec<Placed>,
     /// The state layer: empty for a plain picture.
     overlay: Overlay,
+    /// Everything the arrangement draws, as sentences in the order it is drawn: each
+    /// box's header band, then its rows. The `<desc>` ends with them, so the text
+    /// alternative carries every door, rule and row a sighted reader sees, untruncated.
+    outline: Vec<String>,
+    /// Where the box being drawn sits: `1.2.1` is the first space inside the second
+    /// inside the outermost, so the outline keeps the nesting the boxes show.
+    path: Vec<usize>,
+    /// How many boxes each open box has drawn inside it so far.
+    inside: Vec<usize>,
 }
 
 /// What the state layer draws where: every governed space's governors, by the
@@ -514,6 +534,63 @@ impl Canvas {
     /// Lay out one node at `(x, y)` in a box `w` wide. `tag` is what the parent
     /// calls it (`layer 2`, `root`, `confined to`).
     fn node(&mut self, t: &Topology, x: u32, y: u32, w: u32, tag: Option<String>) -> Frag {
+        let k = match self.inside.last_mut() {
+            Some(count) => {
+                *count += 1;
+                *count
+            }
+            None => 1,
+        };
+        self.path.push(k);
+        self.inside.push(0);
+        let frag = self.space(t, x, y, w, tag);
+        self.inside.pop();
+        self.path.pop();
+        frag
+    }
+
+    /// One box's sentence in the outline: where it is, what the parent calls it, its
+    /// kind and the facts its header band shows.
+    fn say_space(&mut self, head: &Head, again: bool) {
+        let path: Vec<String> = self.path.iter().map(usize::to_string).collect();
+        let mut s = format!("Space {}", path.join("."));
+        if let Some(tag) = &head.tag {
+            let _ = write!(s, ", {tag}");
+        }
+        let _ = write!(s, ": {}", head.label);
+        if !head.detail.is_empty() {
+            let _ = write!(s, ", {}", head.detail);
+        }
+        if let Some(iri) = &head.iri {
+            let _ = write!(s, "; named {iri}");
+        }
+        if again {
+            s.push_str("; drawn above: the same space, reached again");
+        }
+        self.say(s);
+    }
+
+    /// The outline, after the summary in the `<desc>`: everything drawn, in the order
+    /// it is drawn. A screen reader reads the summary first, so a long arrangement
+    /// still opens with its size and shape.
+    fn listing(&self) -> String {
+        format!(
+            " Everything drawn, in reading order: {}",
+            self.outline.join(" ")
+        )
+    }
+
+    /// One sentence in the outline, ended with a period.
+    fn say(&mut self, sentence: String) {
+        let mut s = capitalize(&clean(&sentence));
+        if !s.ends_with('.') {
+            s.push('.');
+        }
+        self.outline.push(s);
+    }
+
+    /// [`Canvas::node`]'s body, once the node's place in the outline is known.
+    fn space(&mut self, t: &Topology, x: u32, y: u32, w: u32, tag: Option<String>) -> Frag {
         let (kind, label, detail) = describe(t);
         let iri = t.id.as_ref().map(|i| i.as_str().to_string());
 
@@ -528,6 +605,7 @@ impl Canvas {
                     detail: String::new(),
                     iri: iri.clone(),
                 };
+                self.say_space(&head, true);
                 let mut cursor = self.header(&mut svg, x, y, w, head) + PAD / 2;
                 self.text(
                     &mut svg,
@@ -551,6 +629,7 @@ impl Canvas {
             detail,
             iri,
         };
+        self.say_space(&head, false);
         let mut cursor = self.header(&mut svg, x, y, w, head) + PAD / 2;
 
         // The state layer: what governs this space, under its header band.
@@ -573,10 +652,12 @@ impl Canvas {
                 } else {
                     seals.join("  ")
                 };
+                self.say(format!("seals: {listed}"));
                 let row = [("ikd-m", "seals ".to_string()), ("ikd-x", listed)];
                 self.text(&mut svg, x + PAD, y + cursor, w - 2 * PAD, &row);
                 cursor += LINE;
                 if let Some(namespace) = namespace {
+                    self.say(format!("namespace: {namespace}"));
                     let row = [
                         ("ikd-m", "namespace ".to_string()),
                         ("ikd-x", namespace.clone()),
@@ -586,12 +667,16 @@ impl Canvas {
                 }
             }
             SpaceKind::Limit { .. } => {
-                let row = note("a name in this family resolves as if nothing were bound there");
+                let text = "a name in this family resolves as if nothing were bound there";
+                self.say(text.into());
+                let row = note(text);
                 self.text(&mut svg, x + PAD, y + cursor, w - 2 * PAD, &row);
                 cursor += LINE;
             }
             SpaceKind::Opaque => {
-                let row = note("reports no structure: what the graph knows stops here");
+                let text = "reports no structure: what the graph knows stops here";
+                self.say(text.into());
+                let row = note(text);
                 self.text(&mut svg, x + PAD, y + cursor, w - 2 * PAD, &row);
                 cursor += LINE;
             }
@@ -650,6 +735,7 @@ impl Canvas {
     /// and under a confined door, the corridor it severs into.
     fn doors(&mut self, svg: &mut String, doors: &[Door], x: u32, mut y: u32, w: u32) -> u32 {
         if doors.is_empty() {
+            self.say("no doors".into());
             self.text(
                 svg,
                 x + PAD,
@@ -715,6 +801,7 @@ impl Canvas {
                 let _ = write!(title, ", which confines its sub-requests to {name}");
             }
             let _ = write!(svg, "<g><title>{}</title>\n{row}</g>\n", xml(&title));
+            self.say(title);
             y += LINE;
             if let Some(corridor) = &door.confined {
                 // One indent deeper than the enclosed spaces, so the corridor reads as
@@ -785,6 +872,7 @@ impl Canvas {
                 rule.from, rule.to
             );
             let _ = write!(svg, "<g><title>{}</title>\n{row}</g>\n", xml(&title));
+            self.say(title);
             y += LINE;
         }
         y
@@ -1633,7 +1721,7 @@ fn article(word: &str) -> &'static str {
 }
 
 /// FNV-1a, 64-bit: a stable, dependency-free hash for the ids that tie the root's
-/// `aria-labelledby` to its `<title>` and `<desc>`. Derived from the body, so two
+/// `aria-labelledby` and `aria-describedby` to its `<title>` and `<desc>`. Derived from the body, so two
 /// different pictures inlined in one page do not share ids, and the same picture is
 /// still the same bytes.
 fn fnv1a(bytes: &[u8]) -> u64 {
