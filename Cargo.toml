@@ -41,5 +41,5 @@ ikigai-a11y = "0.7.0"
 ikigai-engine = "0.6.0"
 # The fixture kernel answers the engine's contract requests as JSON.
 serde_json = "1"
-# Parse rendered SVG in the accessibility tests (`tests/audit.rs`).
+# Parse rendered SVG in accessibility regression tests.
 roxmltree = "0.20"
